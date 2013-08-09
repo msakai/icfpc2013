@@ -131,7 +131,4 @@ responseToValue res = getResponseBody res >>= return . decode . BL.pack
 
 -- ^ myproblems
 myproblems :: IO (Maybe [Problem])
-myproblems = do
-  str <- readFile "data/myproblems.json"
-  let lb = BL.pack str
-  return $ decode lb
+myproblems = fmap (decode . BL.pack) $ readFile "data/myproblems.json"
