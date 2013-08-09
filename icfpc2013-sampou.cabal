@@ -21,7 +21,7 @@ source-repository head
 Library
   exposed:           False
   default-language:  Haskell2010
-  build-depends:     base >=4 && <5
+  build-depends:     base >=4 && <5, containers
   hs-source-dirs:    src
   exposed-modules:   BV
 
@@ -29,3 +29,11 @@ Library
 --   default-language:    Haskell2010
 --   main-is:             Main.hs
 --   build-depends:       base >=4 && <5, icfpc2013-sampou
+
+Test-suite TestBV
+  Type:              exitcode-stdio-1.0
+  HS-Source-Dirs:    test
+  Main-is:           TestBV.hs
+  Build-depends:     base >=4 && <5, containers, icfpc2013-sampou, test-framework, test-framework-th, test-framework-hunit, test-framework-quickcheck2, HUnit, QuickCheck >=2 && <3
+  Default-Language: Haskell2010
+  Other-Extensions: TemplateHaskell
