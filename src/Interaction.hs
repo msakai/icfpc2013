@@ -344,3 +344,7 @@ training size ops =  trainingStr size ops >>= responseToValue >>= return . maybe
 
 status :: IO (Maybe (A.Result Status))
 status = statusStr >>= responseToValue >>= return . maybe Nothing (Just . fromJSON)
+
+-- myproblems
+myproblems :: IO (Maybe [Problem])
+myproblems = fmap (decode . BL.pack) $ readFile "data/myproblems.json"
