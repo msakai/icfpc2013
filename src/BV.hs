@@ -111,6 +111,7 @@ instance ToSet Program where
   op (Program x (Fold (Id x') (Const Zero) y z e)) = ["tfold"] `union` op e
   op (Program _ e) = op e
 
+-- ^ Operators constraints
 isValidFor :: Program -> [String] -> Bool
 p `isValidFor` ops = null $ op p \\ ops
 
