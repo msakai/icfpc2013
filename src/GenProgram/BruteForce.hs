@@ -28,7 +28,7 @@ genExpr fvs unused =
   [ do consumeSize 1
        msum $ map return $ [Const b | b <- [Zero, One]]
   , do consumeSize 1
-       msum $ map return $ [Id v | v <- fvs]
+       msum $ map return $ [Var v | v <- fvs]
   , do consumeSize 2
        case unused of
          (x:y:unused') -> do

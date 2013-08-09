@@ -120,6 +120,7 @@ data GuessResponse = GuessResponse
   , gsrsMessage   :: Maybe Message
   , gsrsLightning :: Maybe Bool
   }
+  deriving (Show)
 
 instance FromJSON GuessResponse where
   parseJSON (Object v) = GuessResponse
