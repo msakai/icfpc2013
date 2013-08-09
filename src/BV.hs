@@ -161,3 +161,32 @@ instance ToSExp Op1 where
 
 instance ToSExp Op2 where
   toSExp = SAtom . map toLower . show
+
+
+-- User-friendly combinators
+
+var :: String -> Expr
+var = Id
+
+b0, b1 :: Expr
+b0 = Const Zero
+b1 = Const One
+
+if0 :: Expr -> Expr -> Expr -> Expr
+if0 = If0
+
+fold :: Expr -> Expr -> ID -> ID -> Expr -> Expr
+fold = Fold
+
+not', shl1, shr1, shr4, shr16 :: Expr -> Expr
+not'  = Op1 NOT
+shl1  = Op1 SHL1
+shr1  = Op1 SHR1
+shr4  = Op1 SHR4
+shr16 = Op1 SHR16
+
+and', or', xor', plus :: Expr -> Expr -> Expr
+and' = Op2 AND
+or'  = Op2 OR
+xor' = Op2 XOR
+plus = Op2 PLUS
