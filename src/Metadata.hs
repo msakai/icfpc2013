@@ -26,3 +26,10 @@ op (If0 e0 e1 e2) = ["if0"] `union` op e0 `union` op e1 `union` op e2
 op (Fold e0 e1 x y e2) = ["fold"] `union` op e0 `union` op e1 `union` op e2
 op (Op1 o e0) = [show o] `union` op e0
 op (Op2 o e0 e1) = [show o] `union` op e0 `union` op e1
+
+data Ops = Opsop1 Op1
+         | Opsop2 Op2
+         | Opsif0
+         | Opstfold
+         | Opsfold
+         deriving (Eq, Ord, Show)
