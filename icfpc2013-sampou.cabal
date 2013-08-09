@@ -22,6 +22,8 @@ Library
   exposed:           False
   default-language:  Haskell2010
   build-depends:     base >=4 && <5
+  hs-source-dirs:    src
+  exposed-modules:   BV
 
 -- executable solver
 --   default-language:    Haskell2010
