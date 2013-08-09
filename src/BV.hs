@@ -1,7 +1,8 @@
 module BV where
 
 import Data.Bits
-import Data.List (union)
+import Data.Char (toLower)
+import Data.List (union, (\\))
 import qualified Data.Map as Map
 import Data.Map (Map)
 import Data.Word
@@ -91,10 +92,20 @@ instance Measureable Expr where
 instance Measureable Program where
   size (Program x e)        = 1 + size e
 
--- ^ Op function
-op (Const _) = []
-op (Id _) = []
-op (If0 e0 e1 e2) = ["if0"] `union` op e0 `union` op e1 `union` op e2
-op (Fold e0 e1 x y e2) = ["fold"] `union` op e0 `union` op e1 `union` op e2
-op (Op1 o e0) = [show o] `union` op e0
-op (Op2 o e0 e1) = [show o] `union` op e0 `union` op e1
+class ToSet a where
+  op :: a -> [String]
+
+instance ToSet Expr where
+  op (Const _) = []
+  op (Id _) = []
+  op (If0 e0 e1 e2) = ["if0"] `union` op e0 `union` op e1 `union` op e2
+  op (Fold e0 e1 x y e2) = ["fold"] `union` op e0 `union` op e1 `union` op e2
+  op (Op1 o e0) = [map toLower $ show o] `union` op e0
+  op (Op2 o e0 e1) = [map toLower $ show o] `union` op e0 `union` op e1
+
+instance ToSet Program where
+  op (Program x (Fold (Id x') (Const Zero) y z e)) = ["tfold"] `union` op e
+  op (Program _ e) = op e
+
+isValidFor :: Program -> [String] -> Bool
+p `isValidFor` ops = null $ op p \\ ops
