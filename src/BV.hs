@@ -23,13 +23,13 @@ data Expr
   deriving (Eq, Ord, Show)
 
 data Bin = Zero | One
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Show, Bounded, Enum)
 
 data Op1 = NOT | SHL1 | SHR1 | SHR4 | SHR16
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Show, Bounded, Enum)
 
 data Op2 = AND | OR | XOR | PLUS
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Show, Bounded, Enum)
 
 type ID = String
 
