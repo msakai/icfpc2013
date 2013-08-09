@@ -92,17 +92,9 @@ instance Measureable Program where
   size (Program x e)        = 1 + size e
 
 -- ^ Op function
-op :: Expr -> [Ops]
 op (Const _) = []
 op (Id _) = []
-op (If0 e0 e1 e2) = [OpsIf0] `union` op e0 `union` op e1 `union` op e2
-op (Fold e0 e1 x y e2) = [OpsFold] `union` op e0 `union` op e1 `union` op e2
-op (Op1 o e0) = [OpsOp1 o] `union` op e0
-op (Op2 o e0 e1) = [OpsOp2 o] `union` op e0 `union` op e1
-
-data Ops = OpsOp1 Op1
-         | OpsOp2 Op2
-         | OpsIf0
-         | OpstFold
-         | OpsFold
-         deriving (Eq, Ord, Show)
+op (If0 e0 e1 e2) = ["if0"] `union` op e0 `union` op e1 `union` op e2
+op (Fold e0 e1 x y e2) = ["fold"] `union` op e0 `union` op e1 `union` op e2
+op (Op1 o e0) = [show o] `union` op e0
+op (Op2 o e0 e1) = [show o] `union` op e0 `union` op e1
