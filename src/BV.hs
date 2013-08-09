@@ -1,11 +1,15 @@
+{-# LANGUAGE FlexibleInstances, TypeSynonymInstances #-}
 module BV where
 
+import Data.Char
 import Data.Bits
 import Data.Char (toLower)
 import Data.List (union, (\\))
 import qualified Data.Map as Map
 import Data.Map (Map)
 import Data.Word
+
+import SExp
 
 data Program
   = Program
@@ -109,3 +113,50 @@ instance ToSet Program where
 
 isValidFor :: Program -> [String] -> Bool
 p `isValidFor` ops = null $ op p \\ ops
+
+-- Pretty Printing
+
+class Render a where
+  render :: a -> String
+
+instance Render Program where
+  render = renderSExp . toSExp
+
+instance Render Expr where
+  render = renderSExp . toSExp
+
+instance ToSExp Program where
+  toSExp (Program x body) =
+    SApply [ SAtom "lambda"
+           , SApply [SAtom x]
+           , toSExp body
+           ]
+
+instance ToSExp Expr where
+  toSExp (Const b)   = toSExp b
+  toSExp (Id x)      = toSExp x
+  toSExp (If0 c t e) = SApply [SAtom "if0", toSExp c, toSExp t, toSExp e]
+  toSExp (Fold e0 e1 x y e2) =
+    SApply [ SAtom "fold"
+           , toSExp e0
+           , toSExp e1
+           , SApply [ SAtom "lambda"
+                    , SApply [SAtom x, SAtom y]
+                    , toSExp e2
+                    ]
+           ]
+  toSExp (Op1 op e)     = SApply [toSExp op, toSExp e]
+  toSExp (Op2 op e1 e2) = SApply [toSExp op, toSExp e1, toSExp e2]
+
+instance ToSExp Bin where
+  toSExp Zero = SAtom "0"
+  toSExp One  = SAtom "1"
+
+instance ToSExp ID where
+  toSExp v = SAtom v
+
+instance ToSExp Op1 where
+  toSExp = SAtom . map toLower . show
+
+instance ToSExp Op2 where
+  toSExp = SAtom . map toLower . show
