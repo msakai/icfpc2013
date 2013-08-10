@@ -286,10 +286,10 @@ rqStatus = postRequest (url "status")
 mkEvalRequestBody :: Either ProgId Prog -> [Arg] -> String
 mkEvalRequestBody (Left pid) args
   = BL.unpack $ encode 
-  $ object ["id" .= pid ,"aruguments" .= args ]
+  $ object ["id" .= pid ,"arguments" .= args ]
 mkEvalRequestBody (Right prog) args
   = BL.unpack $ encode 
-  $ object ["program" .= prog ,"aruguments" .= args ]
+  $ object ["program" .= prog ,"arguments" .= args ]
 
 mkGuessRequestBody :: ProbId -> Prog -> String
 mkGuessRequestBody prob prog
