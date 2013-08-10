@@ -60,6 +60,12 @@ genExpr ops fvs unused =
        e2 <- genExpr ops fvs unused
        return $ Op2 o e1 e2
   ]
+  where
+    toOps :: (Eq a, Enum a, Bounded a, Ord a, Show a) => [String] -> [a]
+    toOps xs = [fromJust x | x <- map (flip lookup optbl) xs, isJust x]
+      where
+        optbl :: (Eq a, Enum a, Bounded a, Ord a, Show a) => [(String, a)]
+        optbl = map (map toLower . show &&& id) [minBound..maxBound]
 
 consumeSize :: Int -> Gen ()
 consumeSize n = do
@@ -93,13 +99,8 @@ interleaveN ((x:xs):xss) = x : interleaveN (xss ++ [xs])
 myproblems :: IO (Maybe [Problem])
 myproblems = fmap (decode . BL.pack) $ readFile "data/myproblems.json"
 
-toOps :: (Eq a, Enum a, Bounded a, Ord a, Show a) => [String] -> [a]
-toOps xs = [fromJust x | x <- map (flip lookup op2tbl) xs, isJust x]
-  where
-    op2tbl = map (map toLower . show &&& id) [minBound..maxBound]
-
 -- ^ test utility
--- >>> generateById "5JobhKwrQrnW7ZzR2DUKtQku"
+ -- >>> generateById "5JobhKwrQrnW7ZzR2DUKtQku"
 -- [Program "x" (Op1 SHL1 (Const Zero)),Program "x" (Op1 SHL1 (Var "x")),Program "x" (Op1 SHL1 (Const One))]
 --
 generateById :: String -> IO [Program]
