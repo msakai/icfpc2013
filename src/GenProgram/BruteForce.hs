@@ -3,6 +3,8 @@ module GenProgram.BruteForce (generate) where
 import Control.Arrow
 import Control.Monad
 import Control.Monad.State
+import Data.Aeson (decode)
+import qualified Data.ByteString.Lazy.Char8 as BL
 import Data.Char (toLower)
 import Data.Maybe (fromJust, isJust)
 import qualified Data.Set as Set
@@ -81,6 +83,10 @@ interleaveN :: [[a]] -> [a]
 interleaveN [] = []
 interleaveN ([]:xss) = interleaveN xss
 interleaveN ((x:xs):xss) = x : interleaveN (xss ++ [xs])
+
+-- myproblems
+myproblems :: IO (Maybe [Problem])
+myproblems = fmap (decode . BL.pack) $ readFile "data/myproblems.json"
 
 toOps :: (Eq a, Enum a, Bounded a, Ord a, Show a) => [String] -> [a]
 toOps xs = [fromJust x | x <- map (flip lookup op2tbl) xs, isJust x]
