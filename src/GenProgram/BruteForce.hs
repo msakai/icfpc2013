@@ -141,6 +141,9 @@ trainTest ops n = do
                else exitFailure
     x -> putStrLn $ show x
 
+realTest :: Problem -> IO ()
+realTest = guessMania <$> probId <*> probOperators <*> probSize
+
 guessMania :: ProbId -> [String] -> Int -> IO ()
 guessMania pid ops n = forM_ (generate ops n) $ \p -> do
   r <- submitGuess pid (render p)
