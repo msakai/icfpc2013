@@ -101,9 +101,8 @@ isum :: [Gen a] -> Gen a
 isum gs = StateT $ \s ->
   interleaveN [runStateT g s | g <- gs]
 
--- p.size が 最大でも 30 なので、それ以上の変数が必要になることはない
 allVars :: [ID]
-allVars = [[c] | c <- "xyzabcdefghijklmnopqrstuvw"] ++ [['x',c] | c <- "abcdefghijklmnopqrstuvwxyz"]
+allVars = ["x" ++ show i | i <- [(1::Int)..]]
 
 interleave :: [a] -> [a] -> [a]
 interleave (x:xs) ys = x : interleave ys xs
