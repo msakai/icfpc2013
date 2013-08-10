@@ -132,7 +132,7 @@ generateById pid = do
 trainTest :: [String] -> Int -> IO ()
 trainTest ops n = do
   p <- training (Just n) (Just ops)
-  putStrLn $ "TRAINING PROBLEM : " ++ show p
+  putStrLn $ "TRAINING PROBLEM :: " ++ show p
   case fst p of
     (2,0,0) -> if isJust (snd p)
                then do
@@ -149,8 +149,8 @@ guessMania pid ops n = forM_ (generate ops n) $ \p -> do
                then do
                  let Success gr = fromJust $ snd r
                  case gsrsStatus gr of
-                   "win" -> do forM_ [render p, show gr] putStrLn >> exitSuccess
-                   "mismatch" -> putStrLn $ show r
-                   _ -> putStrLn $ show r
+                   "win" -> putStrLn (render p ++ " => " ++ gsrsStatus gr) >> exitSuccess
+                   "mismatch" -> putStrLn (render p ++ " => " ++ gsrsStatus gr) -- TODO : get Hint gsrsValues
+                   _ -> putStrLn (render p ++ " => " ++ gsrsStatus gr)
                else exitFailure
-    (4,1,2) -> exitFailure
+    (4,1,2) -> putStrLn "solved!" >>  exitFailure
