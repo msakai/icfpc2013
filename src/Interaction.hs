@@ -333,12 +333,11 @@ responseToValue res = getResponseCode res >>= \ c ->
 
 -- Getting response data
 
-getProblem :: IO (ResponseCode,Maybe (A.Result Problem))
-getProblem = getProblemsStr >>= responseToValue >>= return . (id *** maybe Nothing (Just . fromJSON))
+getProblems :: IO (ResponseCode,Maybe (A.Result [Problem]))
+getProblems = getProblemsStr >>= responseToValue >>= return . (id *** maybe Nothing (Just . fromJSON))
 
 evalProgram :: Either ProgId Prog -> [Arg] -> IO (ResponseCode,Maybe (A.Result EvalResponse))
 evalProgram prog args = evalProgramStr prog args >>= responseToValue >>= return . (id *** maybe Nothing (Just . fromJSON))
-
               
 submitGuess :: ProbId -> Prog -> IO (ResponseCode, Maybe (A.Result GuessResponse))
 submitGuess prob prog = submitGuessStr prob prog >>=  responseToValue >>= return . (id *** maybe Nothing (Just . fromJSON))
