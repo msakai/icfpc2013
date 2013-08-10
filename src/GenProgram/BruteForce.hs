@@ -2,6 +2,7 @@ module GenProgram.BruteForce (generate) where
 
 import Control.Arrow
 import Control.Applicative ((<$>), (<*>))
+import Control.Concurrent (threadDelay)
 import Control.Monad
 import Control.Monad.State
 import Data.Aeson (decode)
@@ -145,17 +146,23 @@ realTest :: Problem -> IO ()
 realTest = guessMania <$> probId <*> probOperators <*> probSize
 
 guessMania :: ProbId -> [String] -> Int -> IO ()
-guessMania pid ops n = forM_ (generate ops n) $ \p -> do
-  r <- submitGuess pid (render p)
-  case fst r of
-    (2,0,0) -> if isJust (snd r)
-               then do
-                 let Success gr = fromJust $ snd r
-                 case gsrsStatus gr of
-                   "win" -> putStrLn (render p ++ " => " ++ gsrsStatus gr) >> exitSuccess
-                   "mismatch" -> putStrLn (render p ++ " => " ++ gsrsStatus gr) -- TODO : get Hint gsrsValues
-                   _ -> putStrLn (render p ++ " => " ++ gsrsStatus gr)
-               else exitFailure
-    (4,1,2) -> putStrLn "solved!" >> exitFailure
-    (4,1,0) -> putStrLn "gone!" >> exitFailure
-    x -> putStrLn (show x)
+guessMania pid ops n = go (generate ops n)
+  where
+    go :: [Program] -> IO ()
+    go [] = putStrLn "[ERROR!] we can't find the function." >> return ()
+    go (p:ps) = do
+      r <- submitGuess pid (render p)
+      case fst r of
+        (2,0,0) -> if isJust (snd r)
+                   then do
+                     let Success gr = fromJust $ snd r
+                     case gsrsStatus gr of
+                       "win" -> putStrLn (render p ++ " => " ++ gsrsStatus gr)
+                       "mismatch" -> putStrLn (render p ++ " => " ++ gsrsStatus gr) >> go ps -- TODO : gsrsValuesの反例利用
+                       _ -> putStrLn (render p ++ " => " ++ gsrsStatus gr) >> go ps -- FIXME: こんなんある?
+                   else putStrLn "[ERROR!] response body nothing."
+        (4,1,2) -> putStrLn "solved!"
+        (4,1,0) -> putStrLn "gone!"
+        -- 429 : 1秒waitにしているけど根拠は単にtrainTestを連発してみて問題なさげだったからです.
+        (4,2,9) -> putStrLn (render p ++ " sleep 1sec and try again ") >> threadDelay (10^6) >> go (p:ps)
+        x -> putStrLn (show x)
