@@ -1,0 +1,11 @@
+{
+    "id": "SmP2tIpx5vhWCUIb8nM9i4wU",
+    "size": 11,
+    "operators": [
+        "fold",
+        "plus",
+        "shr16",
+        "xor"
+    ],
+    "challenge": "(lambda (x_9367) (fold x_9367 (xor x_9367 x_9367) (lambda (x_9368 x_9369) (plus (shr16 x_9369) x_9368))))"
+}
