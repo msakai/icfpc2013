@@ -141,6 +141,9 @@ trainTest ops n = do
                else exitFailure
     x -> putStrLn $ show x
 
+realTest :: Problem -> IO ()
+realTest = guessMania <$> probId <*> probOperators <*> probSize
+
 guessMania :: ProbId -> [String] -> Int -> IO ()
 guessMania pid ops n = forM_ (generate ops n) $ \p -> do
   r <- submitGuess pid (render p)
@@ -153,4 +156,5 @@ guessMania pid ops n = forM_ (generate ops n) $ \p -> do
                    "mismatch" -> putStrLn (render p ++ " => " ++ gsrsStatus gr) -- TODO : get Hint gsrsValues
                    _ -> putStrLn (render p ++ " => " ++ gsrsStatus gr)
                else exitFailure
-    (4,1,2) -> putStrLn "solved!" >>  exitFailure
+    (4,1,2) -> putStrLn "solved!" >> exitFailure
+    (4,1,0) -> putStrLn "gone!" >> exitFailure
