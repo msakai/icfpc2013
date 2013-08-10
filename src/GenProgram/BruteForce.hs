@@ -14,6 +14,7 @@ import Data.Maybe (fromJust, isJust)
 import qualified Data.Set as Set
 import Data.Set (Set)
 import System.Exit
+import System.IO (hFlush, stdout)
 
 import BV
 import Interaction
@@ -164,5 +165,5 @@ guessMania pid ops n = go (generate ops n)
         (4,1,2) -> putStrLn "solved!"
         (4,1,0) -> putStrLn "gone!"
         -- 429 : 1秒waitにしているけど根拠は単にtrainTestを連発してみて問題なさげだったからです.
-        (4,2,9) -> putStrLn (render p ++ " sleep 1sec and try again ") >> threadDelay (10^6) >> go (p:ps)
+        (4,2,9) -> putStrLn (render p ++ " sleep 1sec and try again ") >> hFlush stdout >> threadDelay (10^6) >> go (p:ps)
         x -> putStrLn (show x)
