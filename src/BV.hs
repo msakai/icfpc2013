@@ -21,6 +21,11 @@ module BV
 
   -- * Pretty Printing
   , Render (..)
+
+  -- * Parsing
+  , program
+  , parseProgram
+  , parseExpr
   
   -- * User-friendly combinators
   , var
@@ -31,12 +36,14 @@ module BV
   , and', or', xor', plus
   ) where
 
+import Control.Monad
 import Data.Char
 import Data.Bits
 import Data.Char (toLower)
 import Data.List (union, (\\))
 import qualified Data.Map as Map
 import Data.Map (Map)
+import Data.Maybe
 import Data.Word
 
 import SExp
@@ -199,6 +206,76 @@ instance ToSExp Op1 where
 
 instance ToSExp Op2 where
   toSExp = SAtom . map toLower . show
+
+{--------------------------------------------------------------------
+  Parsing
+--------------------------------------------------------------------}
+
+program :: String -> Program
+program = fromJust . parseProgram
+
+parseProgram :: String -> Maybe Program
+parseProgram s = fromSExp =<< parseSExp s
+
+parseExpr :: String -> Maybe Expr
+parseExpr s = fromSExp =<< parseSExp s
+
+instance FromSExp Program where
+  fromSExp (SApply [SAtom "lambda", SApply [SAtom x], body]) = do
+    e <- fromSExp body
+    return $ Program x e
+  fromSExp _ = mzero
+
+instance FromSExp Expr where
+  fromSExp s =
+    msum
+    [ liftM Const (fromSExp s)
+    , case s of
+        SApply [SAtom "if0", c, t, e] -> do
+          c' <- fromSExp c
+          t' <- fromSExp t
+          e' <- fromSExp e
+          return $ If0 c' t' e'
+        _ -> mzero
+    , case s of
+        SApply [SAtom "fold", e0, e1, SApply [SAtom "lambda", SApply [SAtom x, SAtom y], e2]] -> do
+          e0' <- fromSExp e0
+          e1' <- fromSExp e1
+          e2' <- fromSExp e2
+          return $ Fold e0' e1' x y e2'
+        _ -> mzero
+    , case s of
+        SApply [op, e] -> do
+          op' <- fromSExp op
+          e'  <- fromSExp e
+          return $ Op1 op' e'
+        _ -> mzero
+    , case s of
+        SApply [op, e1, e2] -> do
+          op' <- fromSExp op
+          e1' <- fromSExp e1
+          e2' <- fromSExp e2
+          return $ Op2 op' e1' e2'
+        _ -> mzero
+    , liftM Var (fromSExp s) -- IDはワイルドカード的になってしまうので意図的に最後に
+    ]
+
+instance FromSExp ID where
+  fromSExp (SAtom x) = return x
+  fromSExp _ = mzero
+
+instance FromSExp Bin where
+  fromSExp (SAtom "0") = return Zero
+  fromSExp (SAtom "1") = return One
+  fromSExp _ = mzero
+
+instance FromSExp Op1 where
+  fromSExp (SAtom x) = listToMaybe [op | op <- [minBound..maxBound], x == map toLower (show op)]
+  fromSExp _ = mzero
+
+instance FromSExp Op2 where
+  fromSExp (SAtom x) = listToMaybe [op | op <- [minBound..maxBound], x == map toLower (show op)]
+  fromSExp _ = mzero
 
 {--------------------------------------------------------------------
   User-friendly combinators
