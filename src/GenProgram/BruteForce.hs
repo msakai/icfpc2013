@@ -5,12 +5,14 @@ import Control.Applicative ((<$>), (<*>))
 import Control.Monad
 import Control.Monad.State
 import Data.Aeson (decode)
+import Data.Aeson.Types as A
 import qualified Data.ByteString.Lazy.Char8 as BL
 import Data.Char (toLower)
 import Data.List (find)
 import Data.Maybe (fromJust, isJust)
 import qualified Data.Set as Set
 import Data.Set (Set)
+import System.Exit
 
 import BV
 import Interaction
@@ -127,3 +129,28 @@ generateById pid = do
   let Just p = find (\p -> probId p == pid) ps
   return $ generate' p
 
+trainTest :: [String] -> Int -> IO ()
+trainTest ops n = do
+  p <- training (Just n) (Just ops)
+  putStrLn $ "TRAINING PROBLEM : " ++ show p
+  case fst p of
+    (2,0,0) -> if isJust (snd p)
+               then do
+                 let Success tp = fromJust (snd p)
+                 guessMania <$> trprId <*> trprOperators <*> trprSize $ tp
+               else exitFailure
+    x -> putStrLn $ show x
+
+guessMania :: ProbId -> [String] -> Int -> IO ()
+guessMania pid ops n = forM_ (generate ops n) $ \p -> do
+  r <- submitGuess pid (render p)
+  case fst r of
+    (2,0,0) -> if isJust (snd r)
+               then do
+                 let Success gr = fromJust $ snd r
+                 case gsrsStatus gr of
+                   "win" -> do forM_ [render p, show gr] putStrLn >> exitSuccess
+                   "mismatch" -> putStrLn $ show r
+                   _ -> putStrLn $ show r
+               else exitFailure
+    (4,1,2) -> exitFailure
