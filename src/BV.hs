@@ -147,8 +147,8 @@ instance ToSet Expr where
   op (Var _) = []
   op (If0 e0 e1 e2) = ["if0"] `union` op e0 `union` op e1 `union` op e2
   op (Fold e0 e1 x y e2) = ["fold"] `union` op e0 `union` op e1 `union` op e2
-  op (Op1 o e0) = [map toLower $ show o] `union` op e0
-  op (Op2 o e0 e1) = [map toLower $ show o] `union` op e0 `union` op e1
+  op (Op1 o e0) = [render o] `union` op e0
+  op (Op2 o e0 e1) = [render o] `union` op e0 `union` op e1
 
 instance ToSet Program where
   op (Program x (Fold (Var x') (Const Zero) y z e)) = ["tfold"] `union` op e
@@ -169,6 +169,12 @@ instance Render Program where
   render = renderSExp . toSExp
 
 instance Render Expr where
+  render = renderSExp . toSExp
+
+instance Render Op1 where
+  render = renderSExp . toSExp
+
+instance Render Op2 where
   render = renderSExp . toSExp
 
 instance ToSExp Program where
@@ -270,11 +276,11 @@ instance FromSExp Bin where
   fromSExp _ = mzero
 
 instance FromSExp Op1 where
-  fromSExp (SAtom x) = listToMaybe [op | op <- [minBound..maxBound], x == map toLower (show op)]
+  fromSExp (SAtom x) = listToMaybe [op | op <- [minBound..maxBound], x == render op]
   fromSExp _ = mzero
 
 instance FromSExp Op2 where
-  fromSExp (SAtom x) = listToMaybe [op | op <- [minBound..maxBound], x == map toLower (show op)]
+  fromSExp (SAtom x) = listToMaybe [op | op <- [minBound..maxBound], x == render op]
   fromSExp _ = mzero
 
 {--------------------------------------------------------------------

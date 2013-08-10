@@ -135,13 +135,16 @@ realTest = guessMania <$> probId <*> probOperators <*> probSize
 guessMania :: ProbId -> [String] -> Int -> IO ()
 guessMania pid ops n = do 
   let (ps, l) = (generate ops n, length ps)
-  if l >= 75 -- 300sec / 20sec * 5req = 75が最大の問い合わせ回数なのでそもそも無理なのは中断
+  if l >= 5000 -- 適当に実験してきめる
     then do putStrLn $ "We have " ++ show l ++ " programs, which is exactly timeover on current tactics(bruteforce)"
             putStrLn "stopping..."
     else do putStr $ "We have " ++ show l ++ " programs, Are you continue? (yes|no)> "
             yn <- getLine
             case yn of
-              "yes" -> go ps
+              "yes" -> do
+                ps' <- evalMania pid ps
+                putStrLn $ "Targetting " ++ show (length ps') ++ " programs..."
+                go ps'
               _ -> putStrLn "stopping..."
   where
     go :: [Program] -> IO ()
@@ -154,7 +157,20 @@ guessMania pid ops n = do
                      let Success gr = fromJust $ snd r
                      case gsrsStatus gr of
                        "win" -> putStrLn (render p ++ " => " ++ gsrsStatus gr)
-                       "mismatch" -> putStrLn (render p ++ " => " ++ gsrsStatus gr) >> go ps -- TODO : gsrsValuesの反例利用
+                       "mismatch" -> do
+                         putStrLn (render p ++ " => " ++ gsrsStatus gr)
+                         putStrLn $ show $ gsrsValues gr
+                         let Just testCase = gsrsValues gr
+                         r <- evalProgram (Left pid) testCase
+                         case fst r of
+                           (2,0,0) -> do
+                             let Just (Success er) = snd r
+                                 Just outs = evrsOutputs er
+                                 inOut = zip (map read testCase) (map read outs)
+                                 ps' = filter (match inOut) ps
+                             putStrLn $ "Targetting " ++ show (length ps') ++ " programs..."
+                             go ps'
+                           x -> putStrLn $ show x
                        _ -> putStrLn (render p ++ " => " ++ gsrsStatus gr) >> go ps -- FIXME: こんなんある?
                    else putStrLn "[ERROR!] response body nothing."
         (4,1,2) -> putStrLn "solved!"
@@ -162,3 +178,22 @@ guessMania pid ops n = do
         -- 429 : 1秒waitにしているけど根拠は単にtrainTestを連発してみて問題なさげだったからです.
         (4,2,9) -> putStrLn (render p ++ " sleep 1sec and try again ") >> hFlush stdout >> threadDelay (10^6) >> go (p:ps)
         x -> putStrLn (show x)
+
+
+evalMania :: ProbId -> [Program] -> IO [Program]
+evalMania pid progs = do
+  r <- evalProgram (Left pid) testCase
+  case fst r of
+    (2,0,0) -> do
+      let Just (Success er) = snd r
+          Just outs = evrsOutputs er
+          inOut = zip (map read testCase) (map read outs)
+      return $ filter (match inOut) progs
+    x -> undefined
+  where
+    testCase = [ "0xFFFFFFFFFFFFFFFF"
+               , "0x0000000000000000"
+               ]
+
+match :: [(BV.Value, BV.Value)] -> Program -> Bool
+match xs p = all (\(i, o) -> eval p i == o) xs
