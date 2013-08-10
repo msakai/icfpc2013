@@ -83,6 +83,7 @@ data EvalResponse = EvalResponse
   , evrsOutputs :: Maybe [Output]
   , evrsMessage :: Maybe Message
   }
+  deriving (Show)
 
 instance FromJSON EvalResponse where
   parseJSON (Object v) = EvalResponse
