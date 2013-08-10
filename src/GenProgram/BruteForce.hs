@@ -158,3 +158,4 @@ guessMania pid ops n = forM_ (generate ops n) $ \p -> do
                else exitFailure
     (4,1,2) -> putStrLn "solved!" >> exitFailure
     (4,1,0) -> putStrLn "gone!" >> exitFailure
+    x -> putStrLn (show x)
