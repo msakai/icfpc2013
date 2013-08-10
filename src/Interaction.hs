@@ -37,7 +37,7 @@ data Problem = Problem
   , probSize      :: Int
   , probOperators :: [Operator]
   , probSolved    :: Maybe Bool
-  , probTimeLeft  :: Maybe Bool
+  , probTimeLeft  :: Maybe Double
   } deriving (Show)
 
 instance FromJSON Problem where
@@ -334,7 +334,7 @@ responseToValue res = getResponseCode res >>= \ c ->
 -- Getting response data
 
 getProblems :: IO (ResponseCode,Maybe (A.Result [Problem]))
-getProblems = getProblemsStr >>= responseToValue >>= return . (id *** maybe Nothing (Just . fromJSON))
+getProblems = getProblemsStr >>= responseToValue' >>= return . (id *** maybe Nothing (Just . fromJSON))
 
 evalProgram :: Either ProgId Prog -> [Arg] -> IO (ResponseCode,Maybe (A.Result EvalResponse))
 evalProgram prog args = evalProgramStr prog args >>= responseToValue >>= return . (id *** maybe Nothing (Just . fromJSON))
