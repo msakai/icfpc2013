@@ -153,4 +153,5 @@ guessMania pid ops n = forM_ (generate ops n) $ \p -> do
                    "mismatch" -> putStrLn (render p ++ " => " ++ gsrsStatus gr) -- TODO : get Hint gsrsValues
                    _ -> putStrLn (render p ++ " => " ++ gsrsStatus gr)
                else exitFailure
-    (4,1,2) -> putStrLn "solved!" >>  exitFailure
+    (4,1,2) -> putStrLn "solved!" >> exitFailure
+    (4,1,0) -> putStrLn "solved!" >> exitFailure
