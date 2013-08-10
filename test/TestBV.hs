@@ -14,7 +14,10 @@ case_test1 = do
   eval prog 0x1122334455667788 @?= 0xFF
   where
     -- P = (lambda (x) (fold x 0 (lambda (y z) (or y z))))
-    prog = Program "x" (fold (var "x") b0 "y" "z" (or' (var "y") (var "z")))
+    prog = Program "x" (fold x b0 "y" "z" (or' y z))
+    x = var "x"
+    y = var "y"
+    z = var "z"
 
 case_test2 = do
   eval prog 0 @?= 0x00000000000055D5
@@ -24,9 +27,12 @@ case_test2 = do
     -- P = (lambda (x_65671) (fold (shr1 (or (not (xor (plus x_65671 (shr1 (if0 (or (plus (shl1 x_65671) x_65671) x_65671) 0 1))) x_65671)) 0)) x_65671 (lambda (x_65672 x_65673) (xor (shl1 x_65673) x_65672))))
     prog =
       Program "x_65671" $
-        Fold (shr1 (or' (not' (xor' (plus (var "x_65671") (shr1 (if0 (or' (plus (shl1 (var "x_65671")) (var "x_65671")) (var "x_65671")) b0 b1))) (var "x_65671"))) b0))
-             (var "x_65671")
-             "x_65672" "x_65673" (xor' (shl1 (var "x_65673")) (var "x_65672"))
+        Fold (shr1 (or' (not' (xor' (plus x_65671 (shr1 (if0 (or' (plus (shl1 x_65671) x_65671) x_65671) b0 b1))) x_65671)) b0))
+             x_65671
+             "x_65672" "x_65673" (xor' (shl1 x_65673) x_65672)
+    x_65671 = var "x_65671"
+    x_65672 = var "x_65672"
+    x_65673 = var "x_65673"
 
 ------------------------------------------------------------------------
 -- Test harness
