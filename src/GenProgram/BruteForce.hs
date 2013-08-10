@@ -135,13 +135,16 @@ realTest = guessMania <$> probId <*> probOperators <*> probSize
 guessMania :: ProbId -> [String] -> Int -> IO ()
 guessMania pid ops n = do 
   let (ps, l) = (generate ops n, length ps)
-  if l >= 75 -- 300sec / 20sec * 5req = 75が最大の問い合わせ回数なのでそもそも無理なのは中断
+  if l >= 300 -- 適当に実験してきめる
     then do putStrLn $ "We have " ++ show l ++ " programs, which is exactly timeover on current tactics(bruteforce)"
             putStrLn "stopping..."
     else do putStr $ "We have " ++ show l ++ " programs, Are you continue? (yes|no)> "
             yn <- getLine
             case yn of
-              "yes" -> go ps
+              "yes" -> do
+                ps' <- evalMania pid ps
+                putStrLn $ "Targetting " ++ show (length ps') ++ " programs...."
+                go ps'
               _ -> putStrLn "stopping..."
   where
     go :: [Program] -> IO ()
