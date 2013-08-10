@@ -40,6 +40,13 @@ genExpr ops fvs unused =
        msum $ map return $ [Const b | b <- [Zero, One]]
   , do consumeSize 1
        msum $ map return $ [Var v | v <- fvs]
+  , do consumeSize 1
+       if "if0" `elem` ops
+         then do e0 <- genExpr ops fvs unused
+                 e1 <- genExpr ops fvs unused
+                 e2 <- genExpr ops fvs unused
+                 return $ If0 e0 e1 e2
+         else mzero
   , do consumeSize 2
        case unused of
          (x:y:unused') -> do
