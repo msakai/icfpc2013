@@ -25,13 +25,22 @@ generate ops n = evalStateT (genProgram ops) n
 type Gen = StateT Int []
 
 genProgram :: [String] -> Gen Program
-genProgram ops = do
-  let (v:vs) = allVars
-  consumeSize 1
-  e <- genExpr ops [v] vs
-  unused <- get
-  guard $ unused == 0
-  return $ Program v e
+genProgram ops = 
+  if "tfold" `elem` ops
+  then do
+    let (x:y:vs) = allVars
+    consumeSize 5 -- Program[1] + Fold[2] + (Var x)[1] + (Const Zero)[1]
+    e <- genExpr ops [y,x] vs
+    unused <- get
+    guard $ unused == 0
+    return $ Program x (Fold (Var x) (Const Zero) x y e)
+  else do
+    let (v:vs) = allVars
+    consumeSize 1
+    e <- genExpr ops [v] vs
+    unused <- get
+    guard $ unused == 0
+    return $ Program v e
 
 genExpr :: [String] -> [ID] -> [ID] -> Gen Expr
 genExpr ops fvs unused =
