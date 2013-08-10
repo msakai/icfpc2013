@@ -147,7 +147,16 @@ realTest :: Problem -> IO ()
 realTest = guessMania <$> probId <*> probOperators <*> probSize
 
 guessMania :: ProbId -> [String] -> Int -> IO ()
-guessMania pid ops n = go (generate ops n)
+guessMania pid ops n = do 
+  let (ps, l) = (generate ops n, length ps)
+  if l >= 75 -- 300sec / 20sec * 5req = 75が最大の問い合わせ回数なのでそもそも無理なのは中断
+    then do putStrLn $ "We have " ++ show l ++ " programs, which is exactly timeover on current tactics(bruteforce)"
+            putStrLn "stopping..."
+    else do putStr $ "We have " ++ show l ++ " programs, Are you continue? (yes|no)> "
+            yn <- getLine
+            case yn of
+              "yes" -> go ps
+              _ -> putStrLn "stopping..."
   where
     go :: [Program] -> IO ()
     go [] = putStrLn "[ERROR!] we can't find the function." >> return ()
