@@ -294,7 +294,7 @@ mkEvalRequestBody (Right prog) args
 mkGuessRequestBody :: ProbId -> Prog -> String
 mkGuessRequestBody prob prog
   = BL.unpack $ encode 
-  $ object ["id" .= prob, "prog" .= prog]
+  $ object ["id" .= prob, "program" .= prog]
 
 mkTrainRequestBody :: Maybe Size -> Maybe [Operator] -> String
 mkTrainRequestBody (Just sz) Nothing 
