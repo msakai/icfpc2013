@@ -1,11 +1,15 @@
 module GenProgram.BruteForce (generate) where
 
+import Control.Arrow
 import Control.Monad
 import Control.Monad.State
+import Data.Char (toLower)
+import Data.Maybe (fromJust, isJust)
 import qualified Data.Set as Set
 import Data.Set (Set)
 
 import BV
+import Interaction
 
 generate :: Int -> [Program]
 generate n = evalStateT genProgram n
@@ -77,3 +81,8 @@ interleaveN :: [[a]] -> [a]
 interleaveN [] = []
 interleaveN ([]:xss) = interleaveN xss
 interleaveN ((x:xs):xss) = x : interleaveN (xss ++ [xs])
+
+toOps :: (Eq a, Enum a, Bounded a, Ord a, Show a) => [String] -> [a]
+toOps xs = [fromJust x | x <- map (flip lookup op2tbl) xs, isJust x]
+  where
+    op2tbl = map (map toLower . show &&& id) [minBound..maxBound]
