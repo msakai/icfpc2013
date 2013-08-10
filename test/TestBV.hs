@@ -14,7 +14,7 @@ case_test1 = do
   eval prog 0x1122334455667788 @?= 0xFF
   where
     -- P = (lambda (x) (fold x 0 (lambda (y z) (or y z))))
-    prog = Program "x" (Fold (Id "x") (Const Zero) "y" "z" (Op2 OR (Id "y") (Id "z")))
+    prog = Program "x" (fold (var "x") b0 "y" "z" (or' (var "y") (var "z")))
 
 case_test2 = do
   eval prog 0 @?= 0x00000000000055D5

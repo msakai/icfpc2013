@@ -1,5 +1,35 @@
 {-# LANGUAGE FlexibleInstances, TypeSynonymInstances #-}
-module BV where
+module BV
+  (
+  -- * BV Language
+    Program (..)
+  , Expr (..)
+  , Bin (..)
+  , Op1 (..)
+  , Op2 (..)
+  , ID
+
+  -- * Semantics
+  , Value
+  , Env
+  , eval
+
+  -- * Metadata
+  , Measureable (..)
+  , ToSet (..)
+  , isValidFor
+
+  -- * Pretty Printing
+  , Render (..)
+  
+  -- * User-friendly combinators
+  , var
+  , b0, b1
+  , if0
+  , fold
+  , not', shl1, shr1, shr4, shr16
+  , and', or', xor', plus
+  ) where
 
 import Data.Char
 import Data.Bits
@@ -11,16 +41,16 @@ import Data.Word
 
 import SExp
 
-data Program
-  = Program
-  { pArg  :: ID
-  , pBody :: Expr
-  }
+{--------------------------------------------------------------------
+  BV Language
+--------------------------------------------------------------------}
+
+data Program = Program ID Expr
   deriving (Eq, Ord, Show)
 
 data Expr
   = Const Bin
-  | Id ID
+  | Var ID
   | If0 Expr Expr Expr
   | Fold Expr Expr ID ID Expr
   | Op1 Op1 Expr
@@ -38,6 +68,10 @@ data Op2 = AND | OR | XOR | PLUS
 
 type ID = String
 
+{--------------------------------------------------------------------
+  Semantics
+--------------------------------------------------------------------}
+
 type Value = Word64
 
 type Env = Map ID Value
@@ -50,7 +84,7 @@ eval1 env (Const b) =
   case b of
     One  -> 1
     Zero -> 0
-eval1 env (Id id) = env Map.! id
+eval1 env (Var id) = env Map.! id
 eval1 env (If0 c t e) =
   if eval1 env c == 0
   then eval1 env t
@@ -79,15 +113,17 @@ evalOp2 OR   = (.|.)
 evalOp2 XOR  = xor
 evalOp2 PLUS = (+)
 
+{--------------------------------------------------------------------
+  Metadata
+--------------------------------------------------------------------}
 
--- ^ Metadata
--- size is method as |.|
+-- | size is method as |.|
 class Measureable a where
   size :: a -> Int
 
 instance Measureable Expr where
   size (Const _)            = 1
-  size (Id _)               = 1
+  size (Var _)              = 1
   size (If0 e0 e1 e2)       = 1 + size e0 + size e1 + size e2
   size (Fold e0 e1 x y e2)  = 2 + size e0 + size e1 + size e2
   size (Op1 _ e0)           = 1 + size e0
@@ -101,21 +137,23 @@ class ToSet a where
 
 instance ToSet Expr where
   op (Const _) = []
-  op (Id _) = []
+  op (Var _) = []
   op (If0 e0 e1 e2) = ["if0"] `union` op e0 `union` op e1 `union` op e2
   op (Fold e0 e1 x y e2) = ["fold"] `union` op e0 `union` op e1 `union` op e2
   op (Op1 o e0) = [map toLower $ show o] `union` op e0
   op (Op2 o e0 e1) = [map toLower $ show o] `union` op e0 `union` op e1
 
 instance ToSet Program where
-  op (Program x (Fold (Id x') (Const Zero) y z e)) = ["tfold"] `union` op e
+  op (Program x (Fold (Var x') (Const Zero) y z e)) = ["tfold"] `union` op e
   op (Program _ e) = op e
 
--- ^ Operators constraints
+-- | Operators constraints
 isValidFor :: Program -> [String] -> Bool
 p `isValidFor` ops = null $ op p \\ ops
 
--- Pretty Printing
+{--------------------------------------------------------------------
+  Pretty Printing
+--------------------------------------------------------------------}
 
 class Render a where
   render :: a -> String
@@ -135,7 +173,7 @@ instance ToSExp Program where
 
 instance ToSExp Expr where
   toSExp (Const b)   = toSExp b
-  toSExp (Id x)      = toSExp x
+  toSExp (Var x)     = toSExp x
   toSExp (If0 c t e) = SApply [SAtom "if0", toSExp c, toSExp t, toSExp e]
   toSExp (Fold e0 e1 x y e2) =
     SApply [ SAtom "fold"
@@ -162,11 +200,12 @@ instance ToSExp Op1 where
 instance ToSExp Op2 where
   toSExp = SAtom . map toLower . show
 
-
--- User-friendly combinators
+{--------------------------------------------------------------------
+  User-friendly combinators
+--------------------------------------------------------------------}
 
 var :: String -> Expr
-var = Id
+var = Var
 
 b0, b1 :: Expr
 b0 = Const Zero
