@@ -120,6 +120,7 @@ data GuessResponse = GuessResponse
   , gsrsMessage   :: Maybe Message
   , gsrsLightning :: Maybe Bool
   }
+  deriving (Show)
 
 instance FromJSON GuessResponse where
   parseJSON (Object v) = GuessResponse
@@ -356,8 +357,3 @@ training size ops =  trainingStr size ops >>= responseToValue' >>= return . mayb
 
 status :: IO (Maybe (A.Result Status))
 status = statusStr >>= responseToValue >>= return . maybe Nothing (Just . fromJSON)
-
--- myproblems
-
-myproblems :: IO (Maybe [Problem])
-myproblems = fmap (decode . BL.pack) $ readFile "../data/myproblems.json"
