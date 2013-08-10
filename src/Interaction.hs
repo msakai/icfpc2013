@@ -5,6 +5,7 @@
 module Interaction where
 
 import qualified Data.ByteString.Lazy.Char8 as BL
+import Control.Arrow ((***))
 import Control.Applicative ((<$>),(<*>))
 import Data.Aeson
 import Data.Aeson.Types as A
@@ -160,7 +161,7 @@ data TrainingProblem = TrainingProblem
   , trprId        :: ProbId
   , trprSize      :: Size
   , trprOperators :: [Operator]
-  } deriving Show
+  } deriving (Show)
 
 instance FromJSON TrainingProblem where
   parseJSON (Object v) = TrainingProblem
@@ -325,13 +326,35 @@ statusStr = simpleHTTP rqStatus
 
 -- Response to JSON value
 
-responseToValue :: N.Result (Response String) -> IO (Maybe Value)
-responseToValue res = getResponseBody res >>= return . decode . BL.pack
+responseToValue :: N.Result (Response String) -> IO (ResponseCode, Maybe Value)
+responseToValue res = getResponseCode res >>= \ c ->
+                      getResponseBody res >>= \ b ->
+                      return (c, decode . BL.pack $ b)
 
-responseToValue' :: N.Result (Response String) -> IO (Maybe Value)
-responseToValue' res =  getResponseCode res >>= displayResponseCode
+-- Getting response data
+
+getProblem :: IO (ResponseCode,Maybe (A.Result Problem))
+getProblem = getProblemsStr >>= responseToValue >>= return . (id *** maybe Nothing (Just . fromJSON))
+
+evalProgram :: Either ProgId Prog -> [Arg] -> IO (ResponseCode,Maybe (A.Result EvalResponse))
+evalProgram prog args = evalProgramStr prog args >>= responseToValue >>= return . (id *** maybe Nothing (Just . fromJSON))
+
+              
+submitGuess :: ProbId -> Prog -> IO (ResponseCode, Maybe (A.Result GuessResponse))
+submitGuess prob prog = submitGuessStr prob prog >>=  responseToValue >>= return . (id *** maybe Nothing (Just . fromJSON))
+
+training :: Maybe Size -> Maybe [Operator] -> IO (ResponseCode, Maybe (A.Result TrainingProblem))
+training size ops =  trainingStr size ops >>= responseToValue' >>= return . (id *** maybe Nothing (Just . fromJSON))
+
+status :: IO (ResponseCode, Maybe (A.Result Status))
+status = statusStr >>= responseToValue >>= return . (id *** maybe Nothing (Just . fromJSON))
+
+-- For Debugging
+
+responseToValue' :: N.Result (Response String) -> IO (ResponseCode, Maybe Value)
+responseToValue' res =  getResponseCode res >>= \ c -> displayResponseCode c
                      >> getResponseBody res >>= \ b -> displayResponseBody b
-                     >> (return . decode . BL.pack $ b)
+                     >> return (c, decode . BL.pack $ b)
 
 displayResponseCode :: ResponseCode -> IO ()
 displayResponseCode = putStrLn . show
@@ -339,21 +362,42 @@ displayResponseCode = putStrLn . show
 displayResponseBody :: String -> IO ()
 displayResponseBody = putStrLn
 
+data APIId = MyProblems | Eval | Guess | Train | GetStatus
+  deriving (Show,Eq,Ord,Enum)
 
--- Getting response data
-
-getProblem :: IO (Maybe (A.Result Problem))
-getProblem = getProblemsStr >>= responseToValue >>= return . maybe Nothing (Just . fromJSON)
-
-evalProgram :: Either ProgId Prog -> [Arg] -> IO (Maybe (A.Result EvalResponse))
-evalProgram prog args = evalProgramStr prog args >>= responseToValue >>= return . maybe Nothing (Just . fromJSON)
-
-              
-submitGuess :: ProbId -> Prog -> IO (Maybe (A.Result GuessResponse))
-submitGuess prob prog = submitGuessStr prob prog >>=  responseToValue >>= return . maybe Nothing (Just . fromJSON)
-
-training :: Maybe Size -> Maybe [Operator] -> IO (Maybe (A.Result TrainingProblem))
-training size ops =  trainingStr size ops >>= responseToValue' >>= return . maybe Nothing (Just . fromJSON)
-
-status :: IO (Maybe (A.Result Status))
-status = statusStr >>= responseToValue >>= return . maybe Nothing (Just . fromJSON)
+responseCodeHelp :: APIId -> ResponseCode -> String
+responseCodeHelp MyProblems code = case code of
+  (2,0,0) -> "body Problem []"
+  (4,0,3) -> "authorization required"
+  (4,2,9) -> "try again later"
+  _       -> "unknown response code for /myproblems"
+responseCodeHelp Eval code = case code of
+  (2,0,0) -> "body EvalResponse"
+  (4,0,0) -> "Bad request   (some input is not well-formed)"
+  (4,0,1) -> "Unauthorized  problem was not requested by the current user"
+  (4,0,4) -> "Not Found     no such challenge"
+  (4,1,0) -> "Gone          problem requested more than 5 minutes ago"
+  (4,1,2) -> "              problem already solved (by current user)"
+  (4,1,3) -> "              request too big"
+  _       -> "unknown response code for /eval"
+responseCodeHelp Guess code = case code of
+  (2,0,0) -> "body GuessResponse"
+  (4,0,0) -> "Bad request   (some input is not well-formed)"
+  (4,0,1) -> "Unauthorized  problem was not requested by the current user"
+  (4,0,4) -> "Not Found     no such challenge"
+  (4,1,0) -> "Gone          problem requested more than 5 minutes ago"
+  (4,1,2) -> "              problem already solved (by current user)"
+  (4,1,3) -> "              request too big"
+  _       -> "unknown response code for /guess"
+responseCodeHelp Train code = case code of
+  (2,0,0) -> "body TrainingProblem"
+  (4,0,0) -> "Bad request"
+  (4,0,3) -> "authorization required"
+  (4,2,9) -> "try again later"
+  _       -> "unknown response code for /train"
+responseCodeHelp GetStatus code = case code of
+  (2,0,0) -> "body Status"
+  (4,0,0) -> "Bad request"
+  (4,0,3) -> "authorization required"
+  (4,2,9) -> "try again later"
+  _       -> "unknown response code for /status"
