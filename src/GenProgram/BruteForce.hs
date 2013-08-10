@@ -162,3 +162,21 @@ guessMania pid ops n = do
         -- 429 : 1秒waitにしているけど根拠は単にtrainTestを連発してみて問題なさげだったからです.
         (4,2,9) -> putStrLn (render p ++ " sleep 1sec and try again ") >> hFlush stdout >> threadDelay (10^6) >> go (p:ps)
         x -> putStrLn (show x)
+
+
+evalMania :: ProbId -> [Program] -> IO [Program]
+evalMania pid progs = do
+  r <- evalProgram (Left pid) testCase
+  case fst r of
+    (2,0,0) -> do
+      let Just (Success er) = snd r
+          Just outs = evrsOutputs er
+          inOut = zip (map read testCase) (map read outs)
+      return $ filter (match inOut) progs
+    x -> undefined
+  where
+    match :: [(BV.Value, BV.Value)] -> Program -> Bool
+    match xs p = all (\(i, o) -> eval p i == o) xs
+    testCase = [ "0xFFFFFFFFFFFFFFFF"
+               , "0x0000000000000000"
+               ]
