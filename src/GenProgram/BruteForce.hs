@@ -135,7 +135,7 @@ realTest = guessMania <$> probId <*> probOperators <*> probSize
 guessMania :: ProbId -> [String] -> Int -> IO ()
 guessMania pid ops n = do 
   let (ps, l) = (generate ops n, length ps)
-  if l >= 800 -- 適当に実験してきめる
+  if l >= 5000 -- 適当に実験してきめる
     then do putStrLn $ "We have " ++ show l ++ " programs, which is exactly timeover on current tactics(bruteforce)"
             putStrLn "stopping..."
     else do putStr $ "We have " ++ show l ++ " programs, Are you continue? (yes|no)> "
@@ -170,6 +170,7 @@ guessMania pid ops n = do
                                  ps' = filter (match inOut) ps
                              putStrLn $ "Targetting " ++ show (length ps') ++ " programs..."
                              go ps'
+                           x -> putStrLn $ show x
                        _ -> putStrLn (render p ++ " => " ++ gsrsStatus gr) >> go ps -- FIXME: こんなんある?
                    else putStrLn "[ERROR!] response body nothing."
         (4,1,2) -> putStrLn "solved!"
