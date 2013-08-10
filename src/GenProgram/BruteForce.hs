@@ -48,14 +48,16 @@ genExpr ops fvs unused =
                  return $ If0 e0 e1 e2
          else mzero
   , do consumeSize 2
-       case unused of
-         (x:y:unused') -> do
-           -- TODO: ibindで対角的に列挙すべき?
-           e0 <- genExpr ops fvs unused
-           e1 <- genExpr ops fvs unused
-           e2 <- genExpr ops (y:x:fvs) unused'
-           return $ Fold e0 e1 x y e2
-         _ -> mzero
+       if "fold" `elem` ops
+          then do case unused of
+                    (x:y:unused') -> do
+                      -- TODO: ibindで対角的に列挙すべき?
+                      e0 <- genExpr ops fvs unused
+                      e1 <- genExpr ops fvs unused
+                      e2 <- genExpr ops (y:x:fvs) unused'
+                      return $ Fold e0 e1 x y e2
+                    _ -> mzero
+         else mzero
   , do consumeSize 1
        o <- msum $ map return $ toOps ops
        e <- genExpr ops fvs unused
