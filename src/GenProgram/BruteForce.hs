@@ -19,11 +19,8 @@ import System.IO (hFlush, stdout)
 import BV
 import Interaction
 
-generate' :: Problem -> [Program]
-generate' = generate <$> probOperators <*> probSize
-
 generate :: [String] -> Int -> [Program]
-generate ops n = evalStateT (genProgram ops) n
+generate ops n = filter (flip isValidFor ops) $ evalStateT (genProgram ops) n
 
 -- 状態は残りサイズ
 type Gen = StateT Int []
@@ -120,16 +117,6 @@ interleaveN ((x:xs):xss) = x : interleaveN (xss ++ [xs])
 -- myproblems
 myproblems :: IO (Maybe [Problem])
 myproblems = fmap (decode . BL.pack) $ readFile "data/myproblems.json"
-
--- ^ test utility
- -- >>> generateById "5JobhKwrQrnW7ZzR2DUKtQku"
--- [Program "x" (Op1 SHL1 (Const Zero)),Program "x" (Op1 SHL1 (Var "x")),Program "x" (Op1 SHL1 (Const One))]
---
-generateById :: String -> IO [Program]
-generateById pid = do
-  Just ps <- myproblems
-  let Just p = find (\p -> probId p == pid) ps
-  return $ generate' p
 
 trainTest :: [String] -> Int -> IO ()
 trainTest ops n = do
