@@ -156,7 +156,7 @@ instance ToSet Program where
 
 -- | Operators constraints
 isValidFor :: Program -> [String] -> Bool
-p `isValidFor` ops = null $ op p \\ ops
+p `isValidFor` ops = null (op p \\ ops) && null (ops \\ op p)
 
 {--------------------------------------------------------------------
   Pretty Printing
