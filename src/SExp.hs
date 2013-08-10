@@ -3,6 +3,7 @@ module SExp
   , renderSExp
   , parseSExp
   , ToSExp (..)
+  , FromSExp (..)
   ) where
 
 import Control.Monad
@@ -46,3 +47,7 @@ atom = liftM SAtom $ many1 (alphaNum <|> char '_')
 
 class ToSExp a where
   toSExp :: a -> SExp
+
+class FromSExp a where
+  fromSExp :: SExp -> Maybe a
+

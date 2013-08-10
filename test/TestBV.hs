@@ -148,6 +148,16 @@ case_fold_3 = do
     inputs  = [0x0,0x1,0x2,0x3,0x4,0x5,0x12345,0x112233,0x1122334455667788,0xFFFFFFFFFFFFFFFF]
     outputs = [0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000]
 
+case_parseProgram =
+  parseProgram "(lambda (x) (fold x 0 (lambda (y z) (or y z))))" @?= Just expected
+  where
+    expected = Program "x" (Fold (Var "x") (Const Zero) "y" "z" (Op2 OR (Var "y") (Var "z")))
+
+case_parseExpr =
+  parseExpr "(fold x 0 (lambda (y z) (or y z)))" @?= Just expected
+  where
+    expected = Fold (Var "x") (Const Zero) "y" "z" (Op2 OR (Var "y") (Var "z"))
+
 ------------------------------------------------------------------------
 -- Test harness
 
