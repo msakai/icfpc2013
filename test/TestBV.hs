@@ -158,6 +158,14 @@ case_parseExpr =
   where
     expected = Fold (Var "x") (Const Zero) "y" "z" (Op2 OR (Var "y") (Var "z"))
 
+case_renderProgram = render prog @?= "(lambda (x) (fold x 0 (lambda (y z) (or y z))))"
+  where
+    prog = Program "x" (Fold (Var "x") (Const Zero) "y" "z" (Op2 OR (Var "y") (Var "z")))
+
+case_renderExpr = render e @?= "(fold x 0 (lambda (y z) (or y z)))"
+  where
+    e = Fold (Var "x") (Const Zero) "y" "z" (Op2 OR (Var "y") (Var "z"))
+
 ------------------------------------------------------------------------
 -- Test harness
 
