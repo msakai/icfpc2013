@@ -2,6 +2,7 @@ module GenProgram.BruteForce (generate) where
 
 import Control.Arrow
 import Control.Applicative ((<$>), (<*>))
+import Control.Concurrent (threadDelay)
 import Control.Monad
 import Control.Monad.State
 import Data.Aeson (decode)
@@ -13,15 +14,13 @@ import Data.Maybe (fromJust, isJust)
 import qualified Data.Set as Set
 import Data.Set (Set)
 import System.Exit
+import System.IO (hFlush, stdout)
 
 import BV
 import Interaction
 
-generate' :: Problem -> [Program]
-generate' = generate <$> probOperators <*> probSize
-
 generate :: [String] -> Int -> [Program]
-generate ops n = evalStateT (genProgram ops) n
+generate ops n = filter (flip isValidFor ops) $ evalStateT (genProgram ops) n
 
 -- 状態は残りサイズ
 type Gen = StateT Int []
@@ -102,9 +101,8 @@ isum :: [Gen a] -> Gen a
 isum gs = StateT $ \s ->
   interleaveN [runStateT g s | g <- gs]
 
--- p.size が 最大でも 30 なので、それ以上の変数が必要になることはない
 allVars :: [ID]
-allVars = [[c] | c <- "xyzabcdefghijklmnopqrstuvw"] ++ [['x',c] | c <- "abcdefghijklmnopqrstuvwxyz"]
+allVars = ["x" ++ show i | i <- [(1::Int)..]]
 
 interleave :: [a] -> [a] -> [a]
 interleave (x:xs) ys = x : interleave ys xs
@@ -119,16 +117,6 @@ interleaveN ((x:xs):xss) = x : interleaveN (xss ++ [xs])
 myproblems :: IO (Maybe [Problem])
 myproblems = fmap (decode . BL.pack) $ readFile "data/myproblems.json"
 
--- ^ test utility
- -- >>> generateById "5JobhKwrQrnW7ZzR2DUKtQku"
--- [Program "x" (Op1 SHL1 (Const Zero)),Program "x" (Op1 SHL1 (Var "x")),Program "x" (Op1 SHL1 (Const One))]
---
-generateById :: String -> IO [Program]
-generateById pid = do
-  Just ps <- myproblems
-  let Just p = find (\p -> probId p == pid) ps
-  return $ generate' p
-
 trainTest :: [String] -> Int -> IO ()
 trainTest ops n = do
   p <- training (Just n) (Just ops)
@@ -141,16 +129,36 @@ trainTest ops n = do
                else exitFailure
     x -> putStrLn $ show x
 
+realTest :: Problem -> IO ()
+realTest = guessMania <$> probId <*> probOperators <*> probSize
+
 guessMania :: ProbId -> [String] -> Int -> IO ()
-guessMania pid ops n = forM_ (generate ops n) $ \p -> do
-  r <- submitGuess pid (render p)
-  case fst r of
-    (2,0,0) -> if isJust (snd r)
-               then do
-                 let Success gr = fromJust $ snd r
-                 case gsrsStatus gr of
-                   "win" -> putStrLn (render p ++ " => " ++ gsrsStatus gr) >> exitSuccess
-                   "mismatch" -> putStrLn (render p ++ " => " ++ gsrsStatus gr) -- TODO : get Hint gsrsValues
-                   _ -> putStrLn (render p ++ " => " ++ gsrsStatus gr)
-               else exitFailure
-    (4,1,2) -> putStrLn "solved!" >>  exitFailure
+guessMania pid ops n = do 
+  let (ps, l) = (generate ops n, length ps)
+  if l >= 75 -- 300sec / 20sec * 5req = 75が最大の問い合わせ回数なのでそもそも無理なのは中断
+    then do putStrLn $ "We have " ++ show l ++ " programs, which is exactly timeover on current tactics(bruteforce)"
+            putStrLn "stopping..."
+    else do putStr $ "We have " ++ show l ++ " programs, Are you continue? (yes|no)> "
+            yn <- getLine
+            case yn of
+              "yes" -> go ps
+              _ -> putStrLn "stopping..."
+  where
+    go :: [Program] -> IO ()
+    go [] = putStrLn "[ERROR!] we can't find the function." >> return ()
+    go (p:ps) = do
+      r <- submitGuess pid (render p)
+      case fst r of
+        (2,0,0) -> if isJust (snd r)
+                   then do
+                     let Success gr = fromJust $ snd r
+                     case gsrsStatus gr of
+                       "win" -> putStrLn (render p ++ " => " ++ gsrsStatus gr)
+                       "mismatch" -> putStrLn (render p ++ " => " ++ gsrsStatus gr) >> go ps -- TODO : gsrsValuesの反例利用
+                       _ -> putStrLn (render p ++ " => " ++ gsrsStatus gr) >> go ps -- FIXME: こんなんある?
+                   else putStrLn "[ERROR!] response body nothing."
+        (4,1,2) -> putStrLn "solved!"
+        (4,1,0) -> putStrLn "gone!"
+        -- 429 : 1秒waitにしているけど根拠は単にtrainTestを連発してみて問題なさげだったからです.
+        (4,2,9) -> putStrLn (render p ++ " sleep 1sec and try again ") >> hFlush stdout >> threadDelay (10^6) >> go (p:ps)
+        x -> putStrLn (show x)
