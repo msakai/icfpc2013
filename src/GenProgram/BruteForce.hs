@@ -135,7 +135,7 @@ realTest = guessMania <$> probId <*> probOperators <*> probSize
 guessMania :: ProbId -> [String] -> Int -> IO ()
 guessMania pid ops n = do 
   let (ps, l) = (generate ops n, length ps)
-  if l >= 300 -- 適当に実験してきめる
+  if l >= 800 -- 適当に実験してきめる
     then do putStrLn $ "We have " ++ show l ++ " programs, which is exactly timeover on current tactics(bruteforce)"
             putStrLn "stopping..."
     else do putStr $ "We have " ++ show l ++ " programs, Are you continue? (yes|no)> "
@@ -143,7 +143,7 @@ guessMania pid ops n = do
             case yn of
               "yes" -> do
                 ps' <- evalMania pid ps
-                putStrLn $ "Targetting " ++ show (length ps') ++ " programs...."
+                putStrLn $ "Targetting " ++ show (length ps') ++ " programs..."
                 go ps'
               _ -> putStrLn "stopping..."
   where
@@ -157,7 +157,19 @@ guessMania pid ops n = do
                      let Success gr = fromJust $ snd r
                      case gsrsStatus gr of
                        "win" -> putStrLn (render p ++ " => " ++ gsrsStatus gr)
-                       "mismatch" -> putStrLn (render p ++ " => " ++ gsrsStatus gr) >> go ps -- TODO : gsrsValuesの反例利用
+                       "mismatch" -> do
+                         putStrLn (render p ++ " => " ++ gsrsStatus gr)
+                         putStrLn $ show $ gsrsValues gr
+                         let Just testCase = gsrsValues gr
+                         r <- evalProgram (Left pid) testCase
+                         case fst r of
+                           (2,0,0) -> do
+                             let Just (Success er) = snd r
+                                 Just outs = evrsOutputs er
+                                 inOut = zip (map read testCase) (map read outs)
+                                 ps' = filter (match inOut) ps
+                             putStrLn $ "Targetting " ++ show (length ps') ++ " programs..."
+                             go ps'
                        _ -> putStrLn (render p ++ " => " ++ gsrsStatus gr) >> go ps -- FIXME: こんなんある?
                    else putStrLn "[ERROR!] response body nothing."
         (4,1,2) -> putStrLn "solved!"
@@ -178,8 +190,9 @@ evalMania pid progs = do
       return $ filter (match inOut) progs
     x -> undefined
   where
-    match :: [(BV.Value, BV.Value)] -> Program -> Bool
-    match xs p = all (\(i, o) -> eval p i == o) xs
     testCase = [ "0xFFFFFFFFFFFFFFFF"
                , "0x0000000000000000"
                ]
+
+match :: [(BV.Value, BV.Value)] -> Program -> Bool
+match xs p = all (\(i, o) -> eval p i == o) xs
