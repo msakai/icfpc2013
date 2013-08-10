@@ -34,7 +34,7 @@ type Operator = String
 data Problem = Problem
   { probId        :: ProbId
   , probSize      :: Int
-  , probOperators :: [String]
+  , probOperators :: [Operator]
   , probSolved    :: Maybe Bool
   , probTimeLeft  :: Maybe Bool
   } deriving (Show)
@@ -160,7 +160,7 @@ data TrainingProblem = TrainingProblem
   , trprId        :: ProbId
   , trprSize      :: Size
   , trprOperators :: [Operator]
-  }
+  } deriving Show
 
 instance FromJSON TrainingProblem where
   parseJSON (Object v) = TrainingProblem
