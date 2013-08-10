@@ -327,6 +327,18 @@ statusStr = simpleHTTP rqStatus
 responseToValue :: N.Result (Response String) -> IO (Maybe Value)
 responseToValue res = getResponseBody res >>= return . decode . BL.pack
 
+responseToValue' :: N.Result (Response String) -> IO (Maybe Value)
+responseToValue' res =  getResponseCode res >>= displayResponseCode
+                     >> getResponseBody res >>= \ b -> displayResponseBody b
+                     >> (return . decode . BL.pack $ b)
+
+displayResponseCode :: ResponseCode -> IO ()
+displayResponseCode = putStrLn . show
+
+displayResponseBody :: String -> IO ()
+displayResponseBody = putStrLn
+
+
 -- Getting response data
 
 getProblem :: IO (Maybe (A.Result Problem))
@@ -340,11 +352,12 @@ submitGuess :: ProbId -> Prog -> IO (Maybe (A.Result GuessResponse))
 submitGuess prob prog = submitGuessStr prob prog >>=  responseToValue >>= return . maybe Nothing (Just . fromJSON)
 
 training :: Maybe Size -> Maybe [Operator] -> IO (Maybe (A.Result TrainingProblem))
-training size ops =  trainingStr size ops >>= responseToValue >>= return . maybe Nothing (Just . fromJSON)
+training size ops =  trainingStr size ops >>= responseToValue' >>= return . maybe Nothing (Just . fromJSON)
 
 status :: IO (Maybe (A.Result Status))
 status = statusStr >>= responseToValue >>= return . maybe Nothing (Just . fromJSON)
 
 -- myproblems
+
 myproblems :: IO (Maybe [Problem])
-myproblems = fmap (decode . BL.pack) $ readFile "data/myproblems.json"
+myproblems = fmap (decode . BL.pack) $ readFile "../data/myproblems.json"
