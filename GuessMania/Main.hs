@@ -21,11 +21,22 @@ main = do
   case args of
     ["train", size, n] -> do
       let (size', n') = (read size, read n)
-      forM_ [1..n'] $ \n -> trainTest [] size'
+      forM_ [1..n'] $ \x -> do
+        putStrLn "============================="
+        putStrLn $ "T R A I N I N G #" ++ show x
+        putStrLn "============================="
+        trainTest [] size'
     ["real", size] -> do
       Just probs <- myproblems
       let (probs', size') = (filter (\p -> probSize p == size') probs, read size)
-      forM_ probs' realTest
+      forM_ (zip [1..] probs') $ \(x, p) -> do
+        putStrLn "============================="
+        putStrLn $ "R E A L for Size:" ++ size ++ " #" ++ show x
+        putStrLn $ "pid = " ++ probId p
+        putStrLn $ "ops = " ++ show (probOperators p)
+        putStrLn $ "size = " ++ show (probSize p)
+        putStrLn "============================="
+        realTest p
     [pid, ops', size'] -> do
       let ops  = words ops'
           size = read size'
