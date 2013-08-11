@@ -75,7 +75,10 @@ genExpr size (fvs,unused) ops = do
             es0 <- genExpr s0 (fvs,unused) ops
             es1 <- genExpr s1 (fvs,unused) ops
             es2 <- genExpr s2 (fvs,unused) ops
-            return [If0 e0 e1 e2 | e0 <- es0, e1 <- es1, e2 <- es2]
+            let case0 = [If0 (Const Zero) e1 e2 | s0 == 1, e1 <- es1, e2 <- take 1 es2]
+                case1 = [If0 (Const One)  e1 e2 | s0 == 1, e1 <- take 1 es1, e2 <- es2]
+                case2 = [If0 e0 e1 e2 | e0 <- es0, e0 /= Const Zero, e0 /= Const One, e1 <- es1, e2 <- es2]
+            return $ case0 ++ case1 ++ case2
         , liftM concat $ forM [(s0,s1) | "fold" `elem` ops, s0 <- [1..size-2], s1 <- [1..size-2-s0]] $ \(s0,s1) -> do
             let s2 = size-2-s0-s1
             es0 <- genExpr s0 (fvs,unused) ops
@@ -90,15 +93,17 @@ genExpr size (fvs,unused) ops = do
             let s1 = size-1-s0
             es0 <- genExpr s0 (fvs,unused) ops
             es1 <- genExpr s1 (fvs,unused) ops
-            let es = [Op2 o e0 e1 | o <- toOps ops, e0 <- es0, e1 <- es1, e0 <= e1]
+            let esElse = [Op2 o e0 e1 | o <- toOps ops, o /= AND, e0 <- es0, e1 <- es1, e0 <= e1]
+                esAnd  = [Op2 AND e0 e1 | AND `elem` toOps ops, e0 <- es0, e1 <- es1, e0 <= e1]
                 -- (and 0 e) や (and e 0) の形の式は全部同じ意味なので、最初の要素だけを残す
-                es' = case filter p es of
-                         []  -> es
-                         repr:_ -> filter (\e -> not (p e) || e == repr) es
-                p (Op2 AND (Const Zero) _) = True
-                p (Op2 AND _ (Const Zero)) = True
-                p _ = False
-            return es'
+                esAnd' = case filter p esAnd of
+                           []  -> esAnd
+                           repr:_ -> filter (\e -> not (p e) || e == repr) esAnd
+                  where
+                    p (Op2 AND (Const Zero) _) = True
+                    p (Op2 AND _ (Const Zero)) = True
+                    p _ = False
+            return $ esAnd' ++ esElse
         ]
       modify (Map.insert (size,fvs) es)
       return es
