@@ -1,4 +1,4 @@
-module GenProgram.Pruned
+module GenProgram.Prune
   (
   -- * High-level API
     ProgramSet
