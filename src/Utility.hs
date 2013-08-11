@@ -10,7 +10,7 @@ import Data.Aeson (decode)
 import Data.Aeson.Types as A
 import qualified Data.ByteString.Lazy.Char8 as BL
 import Data.Maybe (fromJust, isJust)
-import GenProgram.BruteForce
+import GenProgram.DP
 import Interaction
 import System.Exit
 import System.IO (hFlush, stdout)
@@ -43,7 +43,7 @@ realTest = guessMania <$> probId <*> probOperators <*> probSize
 guessMania :: ProbId -> [String] -> Int -> IO ()
 guessMania pid ops n = do 
   let (ps, l) = (generate ops n, length ps)
-  if l >= 50000 -- 適当に実験してきめる
+  if l >= 1000000 -- 適当に実験してきめる
     then do putStrLn $ "We have " ++ show l ++ " programs, which is exactly timeover on current tactics(bruteforce)"
             putStrLn "stopping..."
     else do putStr $ "We have " ++ show l ++ " programs, Are you continue? (yes|no)> "
