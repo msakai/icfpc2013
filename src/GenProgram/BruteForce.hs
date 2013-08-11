@@ -142,7 +142,7 @@ guessMania pid ops n = do
             yn <- getLine
             case yn of
               "yes" -> do
-                ps' <- evalMania pid ps
+                ps' <- evalMania Nothing pid ps
                 putStrLn $ "Targetting " ++ show (length ps') ++ " programs..."
                 go ps'
               _ -> putStrLn "stopping..."
@@ -160,18 +160,10 @@ guessMania pid ops n = do
                        "mismatch" -> do
                          putStrLn (render p ++ " => " ++ gsrsStatus gr)
                          putStrLn $ show $ gsrsValues gr
-                         let Just testCase = gsrsValues gr
-                         r <- evalProgram (Left pid) testCase
-                         case fst r of
-                           (2,0,0) -> do
-                             let Just (Success er) = snd r
-                                 Just outs = evrsOutputs er
-                                 inOut = zip (map read testCase) (map read outs)
-                                 ps' = filter (match inOut) ps
-                             putStrLn $ "Targetting " ++ show (length ps') ++ " programs..."
-                             go ps'
-                           x -> putStrLn $ show x
-                       _ -> putStrLn (render p ++ " => " ++ gsrsStatus gr) >> go ps -- FIXME: こんなんある?
+                         ps' <- evalMania (gsrsValues gr) pid ps
+                         putStrLn $ "Targetting " ++ show (length ps') ++ " programs..."
+                         go ps'
+                       _ -> putStrLn (render p ++ " => " ++ gsrsStatus gr) >> go ps -- error occured
                    else putStrLn "[ERROR!] response body nothing."
         (4,1,2) -> putStrLn "solved!"
         (4,1,0) -> putStrLn "gone!"
@@ -180,17 +172,17 @@ guessMania pid ops n = do
         x -> putStrLn (show x)
 
 
-evalMania :: ProbId -> [Program] -> IO [Program]
-evalMania pid progs = do
-  r <- evalProgram (Left pid) testCase
+evalMania :: Maybe [Arg] -> ProbId -> [Program] -> IO [Program]
+evalMania mTestCase pid progs = do
+  r <- evalProgram (Left pid) $ maybe testCase id mTestCase
   case fst r of
     (2,0,0) -> do
       let Just (Success er) = snd r
           Just outs = evrsOutputs er
           inOut = zip (map read testCase) (map read outs)
       return $ filter (match inOut) progs
-    (4,2,9) -> evalMania pid progs
-    x -> putStrLn (show x) >> evalMania pid progs
+    (4,2,9) -> evalMania mTestCase pid progs
+    x -> putStrLn (show x) >> evalMania mTestCase pid progs
   where
     testCase = [ "0xFFFFFFFFFFFFFFFF"
                , "0x0000000000000000"
