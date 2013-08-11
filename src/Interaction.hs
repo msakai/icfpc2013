@@ -38,7 +38,7 @@ data Problem = Problem
   , probOperators :: [Operator]
   , probSolved    :: Maybe Bool
   , probTimeLeft  :: Maybe Double
-  } deriving (Show)
+  } deriving (Show,Read)
 
 instance FromJSON Problem where
   parseJSON (Object v) = Problem
@@ -62,7 +62,7 @@ data EvalRequest = EvalRequest
   { evrqId        :: Maybe ProgId
   , evrqProgram   :: Maybe Prog
   , evrqArguments :: [Arg]
-  } deriving (Show)
+  } deriving (Show,Read)
 
 instance FromJSON EvalRequest where
   parseJSON (Object v) = EvalRequest 
@@ -83,7 +83,7 @@ data EvalResponse = EvalResponse
   , evrsOutputs :: Maybe [Output]
   , evrsMessage :: Maybe Message
   }
-  deriving (Show)
+  deriving (Show,Read)
 
 instance FromJSON EvalResponse where
   parseJSON (Object v) = EvalResponse
@@ -102,7 +102,7 @@ instance ToJSON EvalResponse where
 data GuessRequest = GuessRequest
   { gsrqId        :: ProgId
   , gsrqProgram   :: Prog
-  } deriving (Show)
+  } deriving (Show,Read)
 
 instance FromJSON GuessRequest where
   parseJSON (Object v) = GuessRequest 
@@ -122,7 +122,7 @@ data GuessResponse = GuessResponse
   , gsrsMessage   :: Maybe Message
   , gsrsLightning :: Maybe Bool
   }
-  deriving (Show)
+  deriving (Show,Read)
 
 instance FromJSON GuessResponse where
   parseJSON (Object v) = GuessResponse
@@ -143,7 +143,7 @@ instance ToJSON GuessResponse where
 data TrainRequest = TrainRequest
   { trrqSize      :: Maybe Size
   , trrqOperators :: Maybe [Operator]
-  } deriving (Show)
+  } deriving (Show,Read)
 
 instance FromJSON TrainRequest where
   parseJSON (Object v) = TrainRequest 
@@ -162,7 +162,7 @@ data TrainingProblem = TrainingProblem
   , trprId        :: ProbId
   , trprSize      :: Size
   , trprOperators :: [Operator]
-  } deriving (Show)
+  } deriving (Show,Read)
 
 instance FromJSON TrainingProblem where
   parseJSON (Object v) = TrainingProblem
@@ -190,19 +190,19 @@ data Status = Status
   , stRequestWindow  :: RequestWindow
   , stCpuWindow      :: CpuWindow
   , stCpuTotalTime   :: Int
-  } deriving (Show)
+  } deriving (Show,Read)
 
 data RequestWindow = RequestWindow
   { rqwResetsIn :: Int
   , rqwAmount   :: Int
   , rqwLimit    :: Int
-  } deriving (Show)
+  } deriving (Show,Read)
 
 data CpuWindow = CpuWindow
   { cpwResetsIn :: Int
   , cpwAmount   :: Int
   , cpwLimit    :: Int
-  } deriving (Show)
+  } deriving (Show,Read)
 
 instance FromJSON Status where
   parseJSON (Object v) = Status
