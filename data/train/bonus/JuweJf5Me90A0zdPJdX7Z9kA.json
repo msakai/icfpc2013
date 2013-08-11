@@ -1,0 +1,14 @@
+{
+    "id": "JuweJf5Me90A0zdPJdX7Z9kA",
+    "size": 25,
+    "operators": [
+        "bonus",
+        "and",
+        "if0",
+        "plus",
+        "shr16",
+        "shr4",
+        "xor"
+    ],
+    "challenge": "(lambda (x_1) (if0 (and (xor x_1 (shr16 (shr4 (shr16 (shr16 x_1))))) 1) (plus (shr16 (shr16 x_1)) (plus x_1 1)) (if0 (shr4 x_1) 1 (xor x_1 1))))"
+}
