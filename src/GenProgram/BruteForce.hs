@@ -174,7 +174,8 @@ guessMania pid ops n = do
 
 evalMania :: Maybe [Arg] -> ProbId -> [Program] -> IO [Program]
 evalMania mTestCase pid progs = do
-  r <- evalProgram (Left pid) $ maybe testCase id mTestCase
+  let testCase = maybe initTestCase id mTestCase
+  r <- evalProgram (Left pid) testCase
   case fst r of
     (2,0,0) -> do
       let Just (Success er) = snd r
@@ -184,9 +185,9 @@ evalMania mTestCase pid progs = do
     (4,2,9) -> evalMania mTestCase pid progs
     x -> putStrLn (show x) >> evalMania mTestCase pid progs
   where
-    testCase = [ "0xFFFFFFFFFFFFFFFF"
-               , "0x0000000000000000"
-               ]
+    initTestCase = [ "0xFFFFFFFFFFFFFFFF"
+                   , "0x0000000000000000"
+                   ]
 
 match :: [(BV.Value, BV.Value)] -> Program -> Bool
 match xs p = all (\(i, o) -> eval p i == o) xs
