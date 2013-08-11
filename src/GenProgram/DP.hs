@@ -40,16 +40,25 @@ generate ops n = filter (flip isValidFor ops) $ genProgram n ops
 type M = State (Map (Int,[ID]) [Expr])
 
 genProgram :: Int -> [String] -> [Program]
-genProgram size ops = 
-  if "tfold" `elem` ops
-  then
-    let (x:y:vs) = allVars
-        es = generateExpr (size - 5) ([y,x],vs) ops
-    in [Program x (Fold (Var x) (Const Zero) x y e) | e <- es]
-  else
-    let (v:vs) = allVars
-        es = generateExpr (size - 1) ([v],vs) ops
-    in [Program v e | e <- es]
+genProgram size ops
+  | "tfold" `elem` ops =
+      let (x:y:vs) = allVars
+          es = generateExpr (size - 5) ([y,x],vs) ops
+      in [Program x (Fold (Var x) (Const Zero) x y e) | e <- es]
+  | "bonus" `elem` ops =
+      --  (lambda (x) (if0 (and e0 1) e1 e2))
+      flip evalState Map.empty $ do
+        let (x:vs) = allVars
+        liftM concat $ forM [(s0,s1) | s0 <- [1..size-4], s1 <- [1..size-4-s0]] $ \(s0,s1) -> do
+          let s2 = size-4-s0-s1
+          es0 <- genExpr s0 ([x],vs) ops
+          es1 <- genExpr s1 ([x],vs) ops
+          es2 <- genExpr s2 ([x],vs) ops
+          return $ [Program x (If0 (Op2 AND e0 (Const One)) e1 e2) | e0 <- es0, e1 <- es1, e2 <- es2]
+  | otherwise =
+      let (v:vs) = allVars
+          es = generateExpr (size - 1) ([v],vs) ops
+      in [Program v e | e <- es]
 
 generateExpr :: Int -> ([ID],[ID]) -> [String] -> [Expr]
 generateExpr size (fvs,unused) ops = evalState (genExpr size (fvs,unused) ops) Map.empty
