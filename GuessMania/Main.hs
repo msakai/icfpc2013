@@ -2,6 +2,7 @@ module Main where
 
 import Control.Monad (forM_)
 import Data.Char (toLower)
+import Data.List (sort)
 import qualified Data.Set as Set
 import Data.Set (Set)
 import System.Environment
@@ -28,7 +29,7 @@ main = do
         trainTest [] size'
     ["real", size] -> do
       Just probs <- myproblems
-      let (probs', size') = (filter (\p -> probSize p == size') probs, read size)
+      let (probs', size') = (reverse $ sort $ filter (\p -> probSize p == size') probs, read size)
       forM_ (zip [1..] probs') $ \(x, p) -> do
         putStrLn "============================="
         putStrLn $ "R E A L for Size:" ++ size ++ " #" ++ show x
