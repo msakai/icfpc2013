@@ -133,7 +133,7 @@ instance FromJSON GuessResponse where
 
 instance ToJSON GuessResponse where
   toJSON v = object $ catMaybes [Just $ ("status"    .=)  $  gsrsStatus v
-                                ,       ("valuess"   .=) <$> gsrsValues v
+                                ,       ("values"    .=) <$> gsrsValues v
                                 ,       ("message"   .=) <$> gsrsMessage v
                                 ,       ("lightning" .=) <$> gsrsLightning v
                                 ]
