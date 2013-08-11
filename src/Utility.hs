@@ -55,7 +55,7 @@ guessMania pid ops n = do
                 go ps'
               _ -> putStrLn "stopping..."
   where
-    go :: [Program] -> IO ()
+    go :: ProgramSet -> IO ()
     go [] = putStrLn "[ERROR!] we can't find the function." >> return ()
     go (p:ps) = do
       r <- submitGuess pid (render p)
@@ -81,7 +81,7 @@ guessMania pid ops n = do
 
 -- | robast eval engine
 --
-evalMania :: Maybe [Arg] -> ProbId -> [Program] -> IO [Program]
+evalMania :: Maybe [Arg] -> ProbId -> ProgramSet -> IO ProgramSet
 evalMania mTestCase pid progs = do
   let testCase = maybe initTestCase id mTestCase
   r <- evalProgram (Left pid) testCase
@@ -90,12 +90,10 @@ evalMania mTestCase pid progs = do
       let Just (Success er) = snd r
           Just outs = evrsOutputs er
           inOut = zip (map read testCase) (map read outs)
-      return $ filter (match inOut) progs
+      return $ filterByExamples progs inOut
     (4,2,9) -> evalMania mTestCase pid progs
     x -> putStrLn (show x) >> evalMania mTestCase pid progs
   where
     initTestCase = [ "0xFFFFFFFFFFFFFFFF"
                    , "0x0000000000000000"
                    ]
-    match :: [(BV.Value, BV.Value)] -> Program -> Bool
-    match xs p = all (\(i, o) -> eval p i == o) xs
