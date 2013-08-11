@@ -79,8 +79,8 @@ empty
 emptyTFold :: Template
 emptyTFold
   = Template
-  { tProgram    = Program v1 $ Fold (Var v1) (Const Zero) v2 v3 (Var h)
-  , holesInfo   = Map.singleton h (Set.fromList [v2,v3]) -- v1を含まないことに注意
+  { tProgram    = Program v1 $ Fold (Var v1) (Const Zero) v1 v2 (Var h)
+  , holesInfo   = Map.singleton h (Set.fromList [v1,v2])
   , unusedVars  = vs
   , unusedHoles = hs
   }
