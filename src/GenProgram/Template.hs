@@ -15,21 +15,32 @@ module GenProgram.Template
   , allOps
   , refine
   , refineH
+
+  -- * instantiation
+  , generateProgram
+  , generateProgram'
+
+  -- * low-level
+  , tProgram
+  , holesInfo
   ) where
 
 import Control.Monad
+import Control.Monad.State
+import Control.Monad.List
 import qualified Data.Map as Map
 import Data.Map (Map)
+import Data.Maybe
 import qualified Data.Set as Set
 import Data.Set (Set)
 
 import BV
+import qualified GenProgram.DP as DP
 
 data Template
   = Template
   { tProgram    :: Program
   , holesInfo   :: Map ID HoleInfo
-  , unusedVars  :: [ID]
   , unusedHoles :: [Hole]
   }
   deriving (Show)
@@ -38,11 +49,17 @@ data Template
 -- 穴は特別な変数で表現
 type Hole = ID
 
--- 穴から参照できる変数の集合
-type HoleInfo = Set ID
+-- 穴から参照できる変数の集合とスコープに含まれていない変数の集合
+type HoleInfo = ([ID], [ID])
 
 holes :: Template -> [Hole]
 holes = Map.keys . holesInfo
+
+holeScope :: Template -> Hole -> [ID]
+holeScope t h = fst $ holesInfo t Map.! h
+
+holeUnusedVars :: Template -> Hole -> [ID]
+holeUnusedVars t h = snd $ holesInfo t Map.! h
 
 allVars :: [ID]
 allVars = ["x" ++ show i | i <- [(1::Int)..]]
@@ -67,8 +84,7 @@ empty :: Template
 empty
   = Template
   { tProgram     = Program v (Var h)
-  , holesInfo   = Map.singleton h (Set.singleton v)
-  , unusedVars  = vs
+  , holesInfo   = Map.singleton h ([v], vs)
   , unusedHoles = hs
   }
   where
@@ -80,12 +96,11 @@ emptyTFold :: Template
 emptyTFold
   = Template
   { tProgram    = Program v1 $ Fold (Var v1) (Const Zero) v1 v2 (Var h)
-  , holesInfo   = Map.singleton h (Set.fromList [v1,v2])
-  , unusedVars  = vs
+  , holesInfo   = Map.singleton h ([v2,v1], vs)
   , unusedHoles = hs
   }
   where
-    (v1:v2:v3:vs) = allVars
+    (v1:v2:vs) = allVars
     (h:hs) = allHoles
 
 allOps :: [String]
@@ -106,24 +121,23 @@ refineH t@Template{ tProgram = prog } h ops =
   [ do b <- [Zero, One]
        let e = Const b
        return $ t'{ tProgram = fill prog h e }
-  , do v <- Set.toList fvs
+  , do v <- fvs
        let e = Var v
        return $ t'{ tProgram = fill prog h e }
   , do guard $ "if0" `elem` ops
        let (hc:ht:he:hs) = unusedHoles t
            e = If0 (Var hc) (Var ht) (Var he)
        return $ t'{ tProgram    = fill prog h e
-                  , holesInfo   = Map.fromList [(hc,fvs),(ht,fvs),(he,fvs)] `Map.union` holesInfo t'
+                  , holesInfo   = Map.fromList [(hc,info),(ht,info),(he,info)] `Map.union` holesInfo t'
                   , unusedHoles = hs
                   }
   , do guard $ "fold" `elem` ops
-       let (y:z:vs)      = unusedVars t
+       let info'         = (z : y : fvs, vs)
+           (y:z:vs)      = unused
            (h0:h1:h2:hs) = unusedHoles t
-           fvs'          = Set.fromList [y,z] `Set.union` fvs
            e             = Fold (Var h0) (Var h1) y z (Var h2)
        return $ t'{ tProgram    = fill prog h e
-                  , holesInfo   = Map.fromList [(h0,fvs),(h1,fvs),(h2,fvs')] `Map.union` holesInfo t'
-                  , unusedVars  = vs
+                  , holesInfo   = Map.fromList [(h2,info'), (h1,info), (h0,info)] `Map.union` holesInfo t'
                   , unusedHoles = hs
                   }
   , do op <- [minBound..maxBound]
@@ -131,7 +145,7 @@ refineH t@Template{ tProgram = prog } h ops =
        let (h1:hs) = unusedHoles t
            e = Op1 op (Var h1)
        return $ t'{ tProgram    = fill prog h e
-                  , holesInfo   = Map.insert h1 fvs (holesInfo t')
+                  , holesInfo   = Map.insert h1 info (holesInfo t')
                   , unusedHoles = hs
                   }
   , do op <- [minBound..maxBound]
@@ -139,16 +153,19 @@ refineH t@Template{ tProgram = prog } h ops =
        let (h1:h2:hs) = unusedHoles t
            e = Op2 op (Var h1) (Var h2)
        return $ t'{ tProgram    = fill prog h e
-                  , holesInfo   = Map.insert h1 fvs $ Map.insert h2 fvs $ holesInfo t'
+                  , holesInfo   = Map.insert h1 info $ Map.insert h2 info $ holesInfo t'
                   , unusedHoles = hs
                   }
   ]
   where
-    fvs = holesInfo t Map.! h -- free variables
+    info@(fvs,unused) = holesInfo t Map.! h -- free variables
     t' = t{ holesInfo = Map.delete h (holesInfo t) } 
 
 fill :: Program -> Hole -> Expr -> Program
-fill (Program x e1) h e2 = Program x (f e1)
+fill (Program x e1) h e2 = Program x (fillExpr e1 h e2)
+
+fillExpr :: Expr -> Hole -> Expr -> Expr
+fillExpr e1 h e2 = f e1
   where
     f (Const b) = Const b
     f v@(Var id)
@@ -158,3 +175,22 @@ fill (Program x e1) h e2 = Program x (f e1)
     f (Fold e0 e1 y z e2) = Fold (f e0) (f e1) y z (f e2)
     f (Op1 op e)     = Op1 op (f e)
     f (Op2 op e1 e2) = Op2 op (f e1) (f e2)
+
+generateProgram :: Template -> [String] -> Int -> Maybe Program
+generateProgram t ops n = listToMaybe $ DP.runGen $ runListT (generateProgram' t ops n)
+
+generateProgram' :: Template -> [String] -> Int -> ListT DP.Gen Program
+generateProgram' t ops n = go body (holes t) (n - 1 - (size body - length (holes t)))
+  where  
+    Program x body = tProgram t
+
+    go :: Expr -> [Hole] -> Int -> ListT DP.Gen Program
+    go body [] 0 = return (Program x body)
+    go body [] i = mzero
+    go _ _ n | n <= 0 = mzero
+    go body (h:hs) n = do
+      i <- msum $ map return [1..n]
+      es2 <- lift $ DP.genExpr i (holesInfo t Map.! h) ops
+      e2 <- msum $ map return es2
+      let body2 = fillExpr body h e2
+      go body2 hs (n - i)

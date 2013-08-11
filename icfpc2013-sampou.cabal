@@ -22,9 +22,9 @@ source-repository head
 Library
   exposed:           False
   default-language:  Haskell2010
-  build-depends:     base >=4 && <5, containers, mtl, HTTP, aeson, bytestring, parsec
+  build-depends:     base >=4 && <5, containers, mtl, HTTP, aeson, bytestring, parsec, process, directory
   hs-source-dirs:    src
-  exposed-modules:   BV, SExp, Interaction, GenProgram.BruteForce, GenProgram.Prune, GenProgram.DP, GenProgram.Template, SMT, Utility
+  exposed-modules:   BV, SExp, Interaction, GenProgram.BruteForce, GenProgram.Prune, GenProgram.DP, GenProgram.Template, GenProgram.TemplateBased, SMT, Utility
 
 -- executable solver
 --   default-language:    Haskell2010

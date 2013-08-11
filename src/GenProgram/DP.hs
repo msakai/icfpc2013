@@ -7,6 +7,9 @@ module GenProgram.DP
 
   -- * Low-level API
   , generateExpr
+  , Gen
+  , runGen
+  , genExpr
   ) where
 
 import Control.Arrow
@@ -37,7 +40,10 @@ generate :: [String] -> Int -> [Program]
 generate ops n = filter (flip isValidFor ops) $ genProgram n ops
 
 -- サイズとスコープ内の変数のリストをキーとしてメモ化
-type M = State (Map (Int,[ID]) [Expr])
+type Gen = State (Map (Int,[ID]) [Expr])
+
+runGen :: Gen a -> a
+runGen m = evalState m Map.empty
 
 genProgram :: Int -> [String] -> [Program]
 genProgram size ops = 
@@ -54,7 +60,7 @@ genProgram size ops =
 generateExpr :: Int -> ([ID],[ID]) -> [String] -> [Expr]
 generateExpr size (fvs,unused) ops = evalState (genExpr size (fvs,unused) ops) Map.empty
 
-genExpr :: Int -> ([ID],[ID]) -> [String] -> M [Expr]
+genExpr :: Int -> ([ID],[ID]) -> [String] -> Gen [Expr]
 genExpr size _ _ | size <= 0 = return []
 genExpr size (fvs,unused) ops = do
   table <- get

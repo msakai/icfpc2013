@@ -2,14 +2,27 @@ module SMT
   ( prelude
   , defineProgram
   , genFindDiff
+
+  , defineTemplate
+  , genCheckTemplateSAT
+  , checkTemplateSAT
   ) where
 
 import Control.Monad.RWS
+import qualified Data.Map as Map
+import Data.Map (Map)
 import qualified Data.Set as Set
 import Data.Set (Set)
 
+import System.Directory
+import System.Exit
+import System.IO
+import System.Process
+import System.IO.Unsafe
+
 import BV
 import SExp
+import qualified GenProgram.Template as T
 
 type Gen = RWS (Set ID) [SExp] Int
 -- Set ID は現在スコープ内にある変数の集合
@@ -24,11 +37,14 @@ defineProgram name (Program x e) =
       -- (define-fun name ((x (_ BitVec 64))) (_ BitVec 64) e)
 
 encodeExpr :: String -> Expr -> Gen SExp
-encodeExpr prefix = f
+encodeExpr = encodeExpr' (\id -> return $ SAtom id)
+
+encodeExpr' :: (ID -> Gen SExp) -> String -> Expr -> Gen SExp
+encodeExpr' handleVar prefix = f
   where
     f (Const Zero) = return zero
     f (Const One)  = return one
-    f (Var id) = return $ SAtom id
+    f (Var id) = handleVar id
     f (If0 c t e) = do
       c' <- f c
       t' <- f t
@@ -37,7 +53,8 @@ encodeExpr prefix = f
     f (Fold e0 e1 y z e2) = do
       fname <- gensym prefix
       fvs <- ask
-      let params = Set.toAscList fvs ++ [y, z]    
+      let fvs' = fvs `Set.difference` Set.fromList [y,z]
+          params = Set.toAscList fvs' ++ [y, z]
       e2' <- local (Set.insert y . Set.insert z) $ f e2
       tell $ [SApply [ SAtom "define-fun", fname, SApply [SApply [SAtom v, valueSort] | v <- params], valueSort, e2' ]]
 
@@ -55,7 +72,7 @@ encodeExpr prefix = f
           a3 = SApply [SAtom "concat", zero56, SApply [SApply [SAtom "_", SAtom "extract", SAtom "23", SAtom "16"], tmp]]
           a2 = SApply [SAtom "concat", zero56, SApply [SApply [SAtom "_", SAtom "extract", SAtom "15", SAtom  "8"], tmp]]
           a1 = SApply [SAtom "concat", zero56, SApply [SApply [SAtom "_", SAtom "extract", SAtom  "7", SAtom  "0"], tmp]]
-          body = foldr (\a b -> SApply $ fname : [SAtom v | v <- Set.toList fvs] ++ [a, b]) e1' [a8,a7,a6,a5,a4,a3,a2,a1]
+          body = foldr (\a b -> SApply $ fname : [SAtom v | v <- Set.toList fvs'] ++ [a, b]) e1' [a8,a7,a6,a5,a4,a3,a2,a1]
 
       return $ SApply [ SAtom "let", SApply [SApply [tmp, e0']], body ]
     f (Op1 op e) = do
@@ -84,6 +101,9 @@ encodeOp2 AND  = SAtom $ "bvand"
 encodeOp2 OR   = SAtom $ "bvor"
 encodeOp2 XOR  = SAtom $ "bvxor"
 encodeOp2 PLUS = SAtom $ "bvadd"
+
+encodeValue :: Value -> SExp
+encodeValue i = SApply [SAtom "_", SAtom ("bv" ++ show i), SAtom "64"]
 
 prelude :: [SExp]
 prelude =
@@ -135,5 +155,56 @@ CVC4は http://cvc4.cs.nyu.edu/web/ からダウンロード・インストー�
 Z3 http://z3.codeplex.com/ でもOKだが、値の表示方法が異なるので注意。
 Z3オンラインでも試せる: http://rise4fun.com/z3
 -}
+
+-- ---------------------------------------------------------------------------
+
+defineTemplate :: String -> T.Template -> [SExp]
+defineTemplate name t =
+  case runRWS (encodeExpr' handleVar name e) (Set.singleton x) 0 of
+    (e, _, defs) ->
+      defs ++ [SApply [SAtom "define-fun", SAtom name, SApply [SApply [SAtom x, valueSort]], valueSort, e]]
+      -- (define-fun name ((x (_ BitVec 64))) (_ BitVec 64) e)
+  where
+    Program x e = T.tProgram t
+
+    handleVar id =
+      case Map.lookup id (T.holesInfo t) of
+        Nothing     -> return $ SAtom id
+        Just (vs,_) -> do
+          let fname = SAtom $ name ++ "-" ++ id
+          tell $ [SApply [ SAtom "declare-fun", fname, SApply [valueSort | _ <- vs], valueSort]]
+          return $ SApply (fname : [SAtom v | v <- vs])
+
+genCheckTemplateSAT :: T.Template -> [(Value, Value)] -> [SExp]
+genCheckTemplateSAT t ios =
+  concat
+  [ map sexp ["(set-logic QF_UFBV)"]
+  , prelude
+  , defineTemplate "program1" T.emptyTFold
+  , [SApply [SAtom "assert", SApply [SAtom "=", SApply [SAtom "program1", encodeValue i], encodeValue o]] | (i,o) <- ios]
+  , map sexp ["(check-sat)"]
+  ]
+
+checkTemplateSAT :: T.Template -> [(Value, Value)] -> Bool
+checkTemplateSAT t ios = unsafePerformIO $ do
+  tmpdir <- getTemporaryDirectory
+  (fname, h) <- openTempFile tmpdir "checkTemplateSAT.smt2"
+
+  let src = unlines $ map renderSExp $ genCheckTemplateSAT t ios
+  hPutStr h src
+  hClose h
+
+  r@(ret,_,_) <- readProcessWithExitCode "cvc4" [fname] []
+  hPrint stderr r
+  removeFile fname
+
+  -- Segmentation Fault
+  when (ret == ExitFailure 6) $ do
+    hPutStrLn stderr src
+
+  -- http://cvc4.cs.nyu.edu/wiki/User_Manual#Exit_status
+  if ret == ExitFailure 20
+  then return False
+  else return True -- それ以外は安全側でsatに倒す
 
 -- ---------------------------------------------------------------------------
