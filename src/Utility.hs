@@ -69,7 +69,8 @@ guessMania pid ops n = do
                        "mismatch" -> do
                          putStrLn (render p ++ " => " ++ gsrsStatus gr)
                          putStrLn $ show $ gsrsValues gr
-                         ps' <- evalMania (gsrsValues gr) pid ps
+                         let Just (inp:outp:_) = fmap (map read) $ gsrsValues gr
+                             ps' = filterByExamples ps (zip [inp] [outp])
                          putStrLn $ "Targetting " ++ show (length ps') ++ " programs..."
                          go ps'
                        _ -> putStrLn (render p ++ " => " ++ gsrsStatus gr) >> go ps -- error occured
