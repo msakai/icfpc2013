@@ -46,8 +46,8 @@ instance Eq Problem where
 
 instance Ord Problem where
   p1 `compare` p2 = (probSize p1) `compare` (probSize p2) <>
-                    ("tfold" `elem` probOperators p1) `compare` ("tfold" `elem` probOperators p2) <>
-                    ("fold" `elem` probOperators p1) `compare` ("fold" `elem` probOperators p2) <>
+                    ("tfold" `notElem` probOperators p1) `compare` ("tfold" `notElem` probOperators p2) <>
+                    ("fold" `notElem` probOperators p1) `compare` ("fold" `notElem` probOperators p2) <>
                     (length $ probOperators p1) `compare` (length $ probOperators p2)
 
 instance FromJSON Problem where
