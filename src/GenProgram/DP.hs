@@ -4,6 +4,9 @@ module GenProgram.DP
   , generate
   , pickup
   , filterByExamples
+
+  -- * Low-level API
+  , generateExpr
   ) where
 
 import Control.Arrow
@@ -41,12 +44,15 @@ genProgram size ops =
   if "tfold" `elem` ops
   then
     let (x:y:vs) = allVars
-        es = evalState (genExpr (size - 5) ([y,x],vs) ops) Map.empty
+        es = generateExpr (size - 5) ([y,x],vs) ops
     in [Program x (Fold (Var x) (Const Zero) x y e) | e <- es]
   else
     let (v:vs) = allVars
-        es = evalState (genExpr (size - 1) ([v],vs) ops) Map.empty
+        es = generateExpr (size - 1) ([v],vs) ops
     in [Program v e | e <- es]
+
+generateExpr :: Int -> ([ID],[ID]) -> [String] -> [Expr]
+generateExpr size (fvs,unused) ops = evalState (genExpr size (fvs,unused) ops) Map.empty
 
 genExpr :: Int -> ([ID],[ID]) -> [String] -> M [Expr]
 genExpr size _ _ | size <= 0 = return []
