@@ -1,6 +1,7 @@
 module Utility 
        ( realTest
        , trainTest
+       , guessMania
        ) where
 
 import BV
@@ -47,6 +48,7 @@ guessMania pid ops n = do
     then do putStrLn $ "We have " ++ show l ++ " programs, which is exactly timeover on current tactics(bruteforce)"
             putStrLn "stopping..."
     else do putStr $ "We have " ++ show l ++ " programs, Are you continue? (yes|no)> "
+            hFlush stdout
             yn <- getLine
             case yn of
               "yes" -> do
