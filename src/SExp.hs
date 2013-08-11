@@ -40,7 +40,7 @@ app :: Parser SExp
 app = 
   liftM SApply $
     between (char '(' >> spaces) (char ')' >> spaces) $ 
-      many1 sexp
+      many sexp
 
 atom :: Parser SExp
 atom = liftM SAtom $ many1 (alphaNum <|> char '_')
