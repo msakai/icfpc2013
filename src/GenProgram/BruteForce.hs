@@ -1,15 +1,44 @@
-module GenProgram.BruteForce (generate) where
+module GenProgram.BruteForce
+  (
+  -- * High-level API
+    ProgramSet
+  , newProgramSet
+  , pickup
+  , filterByExamples
+
+  -- * Low-level API
+  , generate
+  ) where
 
 import Control.Arrow
 import Control.Monad
 import Control.Monad.State
 import Data.Char (toLower)
 import Data.List (find)
-import Data.Maybe (fromJust, isJust)
+import Data.Maybe (fromJust, isJust, listToMaybe)
 import qualified Data.Set as Set
 import Data.Set (Set)
 
 import BV
+
+-- ---------------------------------------------------------------------------
+-- High-level API
+
+type ProgramSet = [Program]
+
+newProgramSet :: Int -> [String] -> ProgramSet
+newProgramSet n ops = generate ops n
+
+pickup :: ProgramSet -> Maybe Program
+pickup = listToMaybe
+
+filterByExamples :: ProgramSet -> [(Value,Value)] -> ProgramSet
+filterByExamples ps es = filter match ps
+  where    
+    match :: Program -> Bool
+    match p = all (\(i, o) -> eval p i == o) es
+
+-- ---------------------------------------------------------------------------
 
 generate :: [String] -> Int -> [Program]
 generate ops n = filter (flip isValidFor ops) $ evalStateT (genProgram ops) n
