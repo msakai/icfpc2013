@@ -46,18 +46,15 @@ realTest = guessMania <$> probId <*> probOperators <*> probSize
 guessMania :: ProbId -> [String] -> Int -> IO ()
 guessMania pid ops n = do 
   let (ps, l) = (generate ops n, length ps)
-  if l >= 1000000 -- 適当に実験してきめる
-    then do putStrLn $ "We have " ++ show l ++ " programs, which is exactly timeover on current tactics(bruteforce)"
-            putStrLn "stopping..."
-    else do putStr $ "We have " ++ show l ++ " programs, Are you continue? (yes|no)> "
-            hFlush stdout
-            yn <- getLine
-            case yn of
-              "yes" -> do
-                ps' <- evalMania Nothing pid ps
-                putStrLn $ "Targetting " ++ show (length ps') ++ " programs..."
-                go ps'
-              _ -> putStrLn "stopping..."
+  putStr $ "We have " ++ show l ++ " programs, Are you continue? (yes|no)> "
+  hFlush stdout
+  yn <- return "yes" -- getLine
+  case yn of
+    "yes" -> do
+      ps' <- evalMania Nothing pid ps
+      putStrLn $ "Targetting " ++ show (length ps') ++ " programs..."
+      go ps'
+    _ -> putStrLn "stopping..."
   where
     go :: ProgramSet -> IO ()
     go [] = putStrLn "[ERROR!] we can't find the function." >> return ()
@@ -95,6 +92,8 @@ evalMania mTestCase pid progs = do
           Just outs = evrsOutputs er
           inOut = zip (map read testCase) (map read outs)
       return $ filterByExamples progs inOut
+    (4,1,2) -> putStrLn "solved!" >> return []
+    (4,1,0) -> putStrLn "gone!" >> return []
     (4,2,9) -> evalMania mTestCase pid progs
     x -> putStrLn (show x) >> evalMania mTestCase pid progs
   where
