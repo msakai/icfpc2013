@@ -2,6 +2,8 @@ module Utility
        ( realTest
        , trainTest
        , guessMania
+         -- data
+       , myproblems
        ) where
 
 import BV
