@@ -90,7 +90,15 @@ genExpr size (fvs,unused) ops = do
             let s1 = size-1-s0
             es0 <- genExpr s0 (fvs,unused) ops
             es1 <- genExpr s1 (fvs,unused) ops
-            return [Op2 o e0 e1 | o <- toOps ops, e0 <- es0, e1 <- es1, e0 <= e1]
+            let es = [Op2 o e0 e1 | o <- toOps ops, e0 <- es0, e1 <- es1, e0 <= e1]
+                -- (and 0 e) や (and e 0) の形の式は全部同じ意味なので、最初の要素だけを残す
+                es' = case filter p es of
+                         []  -> es
+                         repr:_ -> filter (\e -> not (p e) || e == repr) es
+                p (Op2 AND (Const Zero) _) = True
+                p (Op2 AND _ (Const Zero)) = True
+                p _ = False
+            return es'
         ]
       modify (Map.insert (size,fvs) es)
       return es
