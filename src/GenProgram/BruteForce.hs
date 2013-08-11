@@ -135,7 +135,7 @@ realTest = guessMania <$> probId <*> probOperators <*> probSize
 guessMania :: ProbId -> [String] -> Int -> IO ()
 guessMania pid ops n = do 
   let (ps, l) = (generate ops n, length ps)
-  if l >= 5000 -- 適当に実験してきめる
+  if l >= 50000 -- 適当に実験してきめる
     then do putStrLn $ "We have " ++ show l ++ " programs, which is exactly timeover on current tactics(bruteforce)"
             putStrLn "stopping..."
     else do putStr $ "We have " ++ show l ++ " programs, Are you continue? (yes|no)> "
@@ -189,7 +189,8 @@ evalMania pid progs = do
           Just outs = evrsOutputs er
           inOut = zip (map read testCase) (map read outs)
       return $ filter (match inOut) progs
-    x -> undefined
+    (4,2,9) -> evalMania pid progs
+    x -> putStrLn (show x) >> evalMania pid progs
   where
     testCase = [ "0xFFFFFFFFFFFFFFFF"
                , "0x0000000000000000"
