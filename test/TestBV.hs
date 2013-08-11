@@ -166,6 +166,21 @@ case_renderExpr = render e @?= "(fold x 0 (lambda (y z) (or y z)))"
   where
     e = Fold (Var "x") (Const Zero) "y" "z" (Op2 OR (Var "y") (Var "z"))
 
+case_isValidFor_normal = (prog `isValidFor` ops) @?= True
+  where
+    prog = program "(lambda (x_9367) (fold x_9367 (xor x_9367 x_9367) (lambda (x_9368 x_9369) (plus (shr16 x_9369) x_9368))))"
+    ops = [ "fold", "plus", "shr16", "xor" ]
+
+case_isValidFor_tfold = (prog `isValidFor` ops) @?= True
+  where
+    prog = program "(lambda (x_1353) (fold x_1353 0 (lambda (x_1353 x_1354) (shr1 (shr4 x_1353)))))"
+    ops = [ "shr1", "shr4", "tfold" ]
+
+case_isValidFor_bonus = (prog `isValidFor` ops) @?= True
+  where
+    prog = program "(lambda (x_9) (if0 (and (plus (shr16 (shr16 (shl1 x_9))) (shr16 x_9)) 1) (plus x_9 (shl1 (and (shr4 x_9) x_9))) (plus 1 (plus x_9 x_9))))"
+    ops = [ "bonus", "and", "if0", "plus", "shl1", "shr16", "shr4" ]
+
 ------------------------------------------------------------------------
 -- Test harness
 

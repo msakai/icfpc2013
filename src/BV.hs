@@ -16,7 +16,7 @@ module BV
 
   -- * Metadata
   , Measureable (..)
-  , ToSet (..)
+  , Op (..)
   , isValidFor
 
   -- * Pretty Printing
@@ -43,6 +43,8 @@ import Data.Char (toLower)
 import Data.List (union, (\\))
 import qualified Data.Map as Map
 import Data.Map (Map)
+import qualified Data.Set as Set
+import Data.Set (Set)
 import Data.Maybe
 import Data.Word
 
@@ -139,24 +141,31 @@ instance Measureable Expr where
 instance Measureable Program where
   size (Program x e)        = 1 + size e
 
-class ToSet a where
-  op :: a -> [String]
+class Op a where
+  op :: a -> Set String
 
-instance ToSet Expr where
-  op (Const _) = []
-  op (Var _) = []
-  op (If0 e0 e1 e2) = ["if0"] `union` op e0 `union` op e1 `union` op e2
-  op (Fold e0 e1 x y e2) = ["fold"] `union` op e0 `union` op e1 `union` op e2
-  op (Op1 o e0) = [render o] `union` op e0
-  op (Op2 o e0 e1) = [render o] `union` op e0 `union` op e1
+instance Op Expr where
+  op (Const _)           = Set.empty
+  op (Var _)             = Set.empty
+  op (If0 e0 e1 e2)      = Set.unions [Set.singleton "if0", op e0, op e1, op e2]
+  op (Fold e0 e1 x y e2) = Set.unions [Set.singleton "fold", op e0, op e1, op e2]
+  op (Op1 o e0)          = Set.insert (render o) (op e0)
+  op (Op2 o e0 e1)       = Set.unions [Set.singleton (render o), op e0, op e1]
 
-instance ToSet Program where
-  op (Program x (Fold (Var x') (Const Zero) y z e)) = ["tfold"] `union` op e
+-- for convienience
+instance Op Program where
   op (Program _ e) = op e
 
 -- | Operators constraints
 isValidFor :: Program -> [String] -> Bool
-p `isValidFor` ops = null (op p \\ ops) && null (ops \\ op p)
+Program x e `isValidFor` ops
+  | "tfold" `elem` ops =
+      case e of
+        Fold (Var x') (Const Zero) x'' y e' -> x == x' && x == x'' && op e' == ops'
+        _ -> False
+  | otherwise = op e == ops'
+  where
+    ops' = Set.fromList ops `Set.difference` Set.fromList ["tfold", "bonus"]
 
 {--------------------------------------------------------------------
   Pretty Printing
