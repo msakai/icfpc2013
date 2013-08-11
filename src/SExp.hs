@@ -7,6 +7,7 @@ module SExp
   ) where
 
 import Control.Monad
+import Data.Char
 import Data.List (intersperse)
 import Text.ParserCombinators.Parsec
 
@@ -43,7 +44,7 @@ app =
       many sexp
 
 atom :: Parser SExp
-atom = liftM SAtom $ many1 (alphaNum <|> char '_')
+atom = liftM SAtom $ many1 (satisfy (\x -> x /= '(' && x /= ')' && not (isSpace x)))
 
 class ToSExp a where
   toSExp :: a -> SExp
