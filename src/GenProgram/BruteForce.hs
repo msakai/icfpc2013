@@ -10,7 +10,6 @@ import qualified Data.Set as Set
 import Data.Set (Set)
 
 import BV
-import Interaction
 
 generate :: [String] -> Int -> [Program]
 generate ops n = filter (flip isValidFor ops) $ evalStateT (genProgram ops) n
