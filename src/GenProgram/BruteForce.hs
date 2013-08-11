@@ -1,13 +1,9 @@
 module GenProgram.BruteForce
   (
-  -- * High-level API
     ProgramSet
-  , newProgramSet
+  , generate
   , pickup
   , filterByExamples
-
-  -- * Low-level API
-  , generate
   ) where
 
 import Control.Arrow
@@ -21,13 +17,7 @@ import Data.Set (Set)
 
 import BV
 
--- ---------------------------------------------------------------------------
--- High-level API
-
 type ProgramSet = [Program]
-
-newProgramSet :: Int -> [String] -> ProgramSet
-newProgramSet n ops = generate ops n
 
 pickup :: ProgramSet -> Maybe Program
 pickup = listToMaybe
@@ -37,8 +27,6 @@ filterByExamples ps es = filter match ps
   where    
     match :: Program -> Bool
     match p = all (\(i, o) -> eval p i == o) es
-
--- ---------------------------------------------------------------------------
 
 generate :: [String] -> Int -> [Program]
 generate ops n = filter (flip isValidFor ops) $ evalStateT (genProgram ops) n
