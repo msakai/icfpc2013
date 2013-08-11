@@ -77,6 +77,7 @@ genExpr ops fvs unused =
        -- TODO: ibindで対角的に列挙すべき?
        e1 <- genExpr ops fvs unused
        e2 <- genExpr ops fvs unused
+       guard $ e1 <= e2
        return $ Op2 o e1 e2
   ]
   where
