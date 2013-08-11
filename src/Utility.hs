@@ -20,7 +20,7 @@ import System.IO (hFlush, stdout)
 myproblems :: IO (Maybe [Problem])
 myproblems = fmap (decode . BL.pack) $ readFile "data/myproblems.json"
 
--- ^ High level test utility on Training mode
+-- | High level test utility on Training mode
 -- 
 trainTest :: [String] -> Int -> IO ()
 trainTest ops n = do
@@ -34,11 +34,11 @@ trainTest ops n = do
                else exitFailure
     x -> putStrLn $ show x
 
--- ^ High level test utility Real Problem mode
+-- | High level test utility Real Problem mode
 realTest :: Problem -> IO ()
 realTest = guessMania <$> probId <*> probOperators <*> probSize
 
--- ^ robast guess engine
+-- | robust guess engine
 --
 guessMania :: ProbId -> [String] -> Int -> IO ()
 guessMania pid ops n = do 
@@ -79,7 +79,7 @@ guessMania pid ops n = do
         (4,2,9) -> putStrLn (render p ++ " sleep 1sec and try again ") >> hFlush stdout >> threadDelay (10^6) >> go (p:ps)
         x -> putStrLn (show x)
 
--- ^ robast eval engine
+-- | robast eval engine
 --
 evalMania :: Maybe [Arg] -> ProbId -> [Program] -> IO [Program]
 evalMania mTestCase pid progs = do
