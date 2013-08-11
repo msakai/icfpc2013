@@ -11,6 +11,7 @@ import Data.Aeson
 import Data.Aeson.Types as A
 import Data.Either
 import Data.Maybe
+import Data.Monoid ((<>))
 import Network.HTTP
 import Network.Stream as N
 
@@ -39,6 +40,15 @@ data Problem = Problem
   , probSolved    :: Maybe Bool
   , probTimeLeft  :: Maybe Double
   } deriving (Show,Read)
+
+instance Eq Problem where
+  p1 == p2 = probId p1 == probId p2
+
+instance Ord Problem where
+  p1 `compare` p2 = (probSize p1) `compare` (probSize p2) <>
+                    ("tfold" `elem` probOperators p1) `compare` ("tfold" `elem` probOperators p2) <>
+                    ("fold" `elem` probOperators p1) `compare` ("fold" `elem` probOperators p2) <>
+                    (length $ probOperators p1) `compare` (length $ probOperators p2)
 
 instance FromJSON Problem where
   parseJSON (Object v) = Problem
