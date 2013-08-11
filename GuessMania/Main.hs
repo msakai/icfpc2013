@@ -27,10 +27,10 @@ main = do
         putStrLn $ "T R A I N I N G #" ++ show x
         putStrLn "============================="
         trainTest [] size'
-    ["real", size] -> do
+    ["real", size, skip] -> do
       Just probs <- myproblems
-      let (probs', size') = (sort $ filter (\p -> probSize p == size') probs, read size)
-      forM_ (zip [1..] probs') $ \(x, p) -> do
+      let (probs', size', skip') = (sort $ filter (\p -> probSize p == size') probs, read size, read skip)
+      forM_ (drop skip' (zip [1..] probs')) $ \(x, p) -> do
         putStrLn "============================="
         putStrLn $ "R E A L for Size:" ++ size ++ " #" ++ show x
         putStrLn $ "pid = " ++ probId p
@@ -55,7 +55,7 @@ main = do
     _ -> do
       putStrLn "usage: GuessMania pid \"op1 op2 op3 .. \" size"
       putStrLn "       GuessMania train size cycle"
-      putStrLn "       GuessMania real size"
+      putStrLn "       GuessMania real size skip"
       return ()
 
 allOps :: Set String
