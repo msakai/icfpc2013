@@ -29,7 +29,7 @@ main = do
         trainTest [] size'
     ["real", size] -> do
       Just probs <- myproblems
-      let (probs', size') = (reverse $ sort $ filter (\p -> probSize p == size') probs, read size)
+      let (probs', size') = (sort $ filter (\p -> probSize p == size') probs, read size)
       forM_ (zip [1..] probs') $ \(x, p) -> do
         putStrLn "============================="
         putStrLn $ "R E A L for Size:" ++ size ++ " #" ++ show x
