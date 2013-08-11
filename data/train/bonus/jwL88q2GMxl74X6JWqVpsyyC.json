@@ -1,0 +1,16 @@
+{
+    "id": "jwL88q2GMxl74X6JWqVpsyyC",
+    "size": 23,
+    "operators": [
+        "bonus",
+        "and",
+        "if0",
+        "not",
+        "or",
+        "shl1",
+        "shr1",
+        "shr4",
+        "xor"
+    ],
+    "challenge": "(lambda (x_15) (if0 (and (not (xor (shl1 1) (shr4 (shl1 x_15)))) 1) (and (or x_15 (shr1 (not x_15))) 1) (xor (or 1 x_15) x_15)))"
+}
